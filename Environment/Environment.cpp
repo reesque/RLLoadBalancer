@@ -50,9 +50,9 @@ void Environment::reset() {
     }
 }
 
-std::tuple<std::vector<int>, int, bool> Environment::step(const int action) {
+std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned action) {
     // Returning vars: nextState, reward, done
-    std::vector<int> nextState;
+    std::vector<unsigned> nextState;
     int reward = 0;
     bool done = true;
 
@@ -64,13 +64,13 @@ std::tuple<std::vector<int>, int, bool> Environment::step(const int action) {
     // Perform action
     if (action == this->_numAction - 1) {
         // MaxAction - 1: Do nothing action
-    } else if (action >= 0 && action < this->_numProc) {
+    } else if (action < this->_numProc) {
         // 0 -> (NumProc - 1): Move from queue to proc, with action being index of the proc to move to
         this->_moveFromQueue(action);
     } else {
         // (NumProc - 1) -> (MaxAction - 2): Move from one proc to another
-        const int fromProc = (action - this->_numAction) / (this->_numProc - 1);
-        const int toProc = (action - this->_numAction) % (this->_numProc - 1);
+        const unsigned fromProc = (action - this->_numAction) / (this->_numProc - 1);
+        const unsigned toProc = (action - this->_numAction) % (this->_numProc - 1);
         this->_moveBetweenProc(fromProc, toProc);
     }
 
@@ -117,8 +117,8 @@ std::string Environment::toString() const {
 
     result << "===========================================" << std::endl;
     result << "TASK QUEUE: [";
-    for (int i = 0; i < this->_taskQueue.size(); i++) {
-        result << this->_taskQueue.at(i)->getRemainingDuration() << " ";
+    for (const std::shared_ptr<Task>& task : this->_taskQueue) {
+        result << task->getRemainingDuration() << " ";
     }
     result << "]" << std::endl;
 

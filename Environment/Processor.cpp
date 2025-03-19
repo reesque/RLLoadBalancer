@@ -5,7 +5,7 @@ Processor::Processor(const unsigned maxCapacity) {
 }
 
 bool Processor::queue(const std::shared_ptr<Task> &task) {
-    const int newTotalProcessTime = this->_totalProcessTime + task->getRemainingDuration();
+    const unsigned newTotalProcessTime = this->_totalProcessTime + task->getRemainingDuration();
     if (newTotalProcessTime <= this->_maxCapacity) {
         this->_tasks.push_back(task);
         this->_totalProcessTime = newTotalProcessTime;
