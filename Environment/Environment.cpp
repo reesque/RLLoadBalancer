@@ -54,9 +54,9 @@ void Environment::reset() {
     }
 }
 
-std::tuple<std::vector<std::unique_ptr<unsigned>>, int, bool> Environment::step(const unsigned action) {
+std::tuple<std::vector<std::shared_ptr<unsigned>>, int, bool> Environment::step(const unsigned action) {
     // Returning vars: nextState, reward, done
-    std::vector<std::unique_ptr<unsigned>> nextState;
+    std::vector<std::shared_ptr<unsigned>> nextState;
     int reward = 0;
     bool done = true;
 
