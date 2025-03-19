@@ -46,6 +46,10 @@ std::shared_ptr<Task> Processor::getLastInQueue() {
         return nullptr;
     }
 
+    // Reduce total duration
+    this->_totalProcessTime -= this->_tasks.back()->getRemainingDuration();
+
+    // Detach from queue and return Task
     std::shared_ptr<Task> t = this->_tasks.back();
     this->_tasks.pop_back();
 

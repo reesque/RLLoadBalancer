@@ -8,24 +8,28 @@
 Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxDuration, const unsigned seed, const bool isDebug) {
     this->_isDebug = isDebug;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
+    this->_actionBetweenProcMap = std::map<unsigned, std::tuple<unsigned, unsigned>>();
     this->_numTask = numTask;
     this->_seed = seed;
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc + (numProc * (numProc - 1)) + 1;
 
+    this->_generateActionMap();
     this->reset();
 }
 
 Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxDuration, const bool isDebug) {
     this->_isDebug = isDebug;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
+    this->_actionBetweenProcMap = std::map<unsigned, std::tuple<unsigned, unsigned>>();
     this->_numTask = numTask;
     this->_seed = std::chrono::steady_clock::now().time_since_epoch().count();
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc + (numProc * (numProc - 1)) + 1;
 
+    this->_generateActionMap();
     this->reset();
 }
 
@@ -50,9 +54,9 @@ void Environment::reset() {
     }
 }
 
-std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned action) {
+std::tuple<std::vector<std::unique_ptr<unsigned>>, int, bool> Environment::step(const unsigned action) {
     // Returning vars: nextState, reward, done
-    std::vector<unsigned> nextState;
+    std::vector<std::unique_ptr<unsigned>> nextState;
     int reward = 0;
     bool done = true;
 
@@ -68,22 +72,22 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
         // 0 -> (NumProc - 1): Move from queue to proc, with action being index of the proc to move to
         this->_moveFromQueue(action);
     } else {
-        // (NumProc - 1) -> (MaxAction - 2): Move from one proc to another
-        const unsigned fromProc = (action - this->_numAction) / (this->_numProc - 1);
-        const unsigned toProc = (action - this->_numAction) % (this->_numProc - 1);
+        // NumProc -> (MaxAction - 2): Move from one proc to another
+        unsigned fromProc, toProc;
+        std::tie(fromProc, toProc) = this->_actionBetweenProcMap[action];
         this->_moveBetweenProc(fromProc, toProc);
     }
 
     // Check done
     for (const std::shared_ptr<Processor>& proc : this->_processors) {
-        nextState.push_back(proc->getTotalProcessTime());
+        nextState.push_back(std::make_unique<unsigned>(proc->getTotalProcessTime()));
         if (proc->getTotalProcessTime() != 0) {
             done = false;
             reward = -1;
         }
     }
 
-    nextState.push_back(this->_taskQueue.size());
+    nextState.push_back(std::make_unique<unsigned>(this->_taskQueue.size()));
     if (!this->_taskQueue.empty()) {
         done = false;
         reward = -1;
@@ -134,7 +138,7 @@ void Environment::_moveBetweenProc(const unsigned fromProc, const unsigned toPro
     const std::shared_ptr<Task> taskToMove = this->_processors.at(fromProc)->getLastInQueue();
 
     // Processor is at max cap, re-queued back to the previous proc
-    if (!this->_processors.at(toProc)->queue(taskToMove)) {
+    if (taskToMove == nullptr || !this->_processors.at(toProc)->queue(taskToMove)) {
         this->_processors.at(fromProc)->queue(taskToMove);
     }
 }
@@ -150,5 +154,18 @@ void Environment::_moveFromQueue(const unsigned toProc) {
     // Processor is at max cap, re-queued back to the task queue
     if (!this->_processors.at(toProc)->queue(t)) {
         this->_taskQueue.push_front(t);
+    }
+}
+
+void Environment::_generateActionMap() {
+    for (int a = 0; a < this->_numProc; ++a) {
+        for (int b = 0; b < this->_numProc; ++b) {
+            if (a == b) continue; // Skip pairs where a == b
+
+            // Compute ordinal number starting from NumProc
+            const unsigned ordinal = this->_numProc + a * (this->_numProc - 1) + (b < a ? b : b - 1);
+
+            this->_actionBetweenProcMap[ordinal] = std::make_tuple(a, b);
+        }
     }
 }
