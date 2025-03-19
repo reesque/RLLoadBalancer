@@ -38,13 +38,13 @@ void Environment::reset() {
     this->_processors.clear();
 
     // Add processors
-    for (int i = 0; i < this->_numProc; i++) {
+    for (int i = 0; i < this->_numProc; ++i) {
         this->_processors.push_back(std::make_shared<Processor>(this->_maxDuration));
     }
 
     std::mt19937 rng = std::mt19937(this->_seed);
 
-    for (int i = 0; i < this->_numTask; i++) {
+    for (int i = 0; i < this->_numTask; ++i) {
         std::uniform_int_distribution<unsigned> rand = std::uniform_int_distribution<unsigned>(1, this->_maxDuration);
         this->_taskQueue.push_back(std::make_shared<Task>(rand(rng)));
     }
@@ -55,6 +55,13 @@ void Environment::reset() {
 }
 
 std::tuple<std::vector<std::shared_ptr<unsigned>>, int, bool> Environment::step(const unsigned action) {
+    // Action out of bound guard
+    if (action >= this->_numAction) {
+        std::stringstream es;
+        es << "Given action out of range: " << action << std::endl;
+        throw std::invalid_argument(es.str());
+    }
+
     // Returning vars: nextState, reward, done
     std::vector<std::shared_ptr<unsigned>> nextState;
     int reward = 0;
@@ -126,7 +133,7 @@ std::string Environment::toString() const {
     }
     result << "]" << std::endl;
 
-    for (int i = 0; i < this->_processors.size(); i++) {
+    for (int i = 0; i < this->_processors.size(); ++i) {
         result << "PROCESS " << i << ": " << this->_processors.at(i)->getTotalProcessTime() << " STEPS" << std::endl;
     }
     result << "===========================================" << std::endl;
