@@ -12,7 +12,6 @@ public:
     unsigned getTotalProcessTime() const;
     float getUtilization() const;
     void tick();
-    std::shared_ptr<Task> getLastInQueue();
 private:
     std::vector<std::shared_ptr<Task>> _tasks;
     unsigned _totalProcessTime = 0;

@@ -5,8 +5,12 @@ Processor::Processor(const unsigned maxCapacity) {
 }
 
 bool Processor::queue(const std::shared_ptr<Task> &task) {
+    if (task == nullptr) {
+        return false;
+    }
+
     const unsigned newTotalProcessTime = this->_totalProcessTime + task->getRemainingDuration();
-    if (newTotalProcessTime <= this->_maxCapacity) {
+    if (newTotalProcessTime < this->_maxCapacity) {
         this->_tasks.push_back(task);
         this->_totalProcessTime = newTotalProcessTime;
 
@@ -39,19 +43,4 @@ unsigned Processor::getTotalProcessTime() const {
 
 float Processor::getUtilization() const {
     return static_cast<float>(this->_totalProcessTime) / static_cast<float>(this->_maxCapacity);
-}
-
-std::shared_ptr<Task> Processor::getLastInQueue() {
-    if (this->_tasks.size() <= 1) {
-        return nullptr;
-    }
-
-    // Reduce total duration
-    this->_totalProcessTime -= this->_tasks.back()->getRemainingDuration();
-
-    // Detach from queue and return Task
-    std::shared_ptr<Task> t = this->_tasks.back();
-    this->_tasks.pop_back();
-
-    return t;
 }

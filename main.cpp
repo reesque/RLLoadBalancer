@@ -1,12 +1,12 @@
+#include "Agent/QLAgent.h"
 #include "Environment/Environment.h"
 
 int main() {
-    Environment env = Environment(4, 7, 10, 123, true);
+    const std::shared_ptr<Environment> env = std::make_shared<Environment>(4, 7, 14, 123, false);
+    QLAgent agent = QLAgent(env, 0.5, 1, 0.1);
 
-    env.step(0);
-    env.step(1);
-    env.step(2);
-    env.step(3);
+    agent.train(50000);
+    agent.rollout();
 
     return 0;
 }
