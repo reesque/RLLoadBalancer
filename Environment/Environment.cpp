@@ -5,31 +5,31 @@
 #include <random>
 #include <sstream>
 
-Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxDuration, const unsigned seed, const bool isDebug) {
+Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxThread,
+        const unsigned maxDuration, const unsigned seed, const bool isDebug) {
     this->_isDebug = isDebug;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
-    this->_actionBetweenProcMap = std::map<unsigned, std::tuple<unsigned, unsigned>>();
     this->_numTask = numTask;
     this->_seed = seed;
+    this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
-    this->_numAction = numProc + (numProc * (numProc - 1)) + 1;
+    this->_numAction = numProc + 1;
 
-    this->_generateActionMap();
     this->reset();
 }
 
-Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxDuration, const bool isDebug) {
+Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxThread,
+        const unsigned maxDuration, const bool isDebug) {
     this->_isDebug = isDebug;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
-    this->_actionBetweenProcMap = std::map<unsigned, std::tuple<unsigned, unsigned>>();
     this->_numTask = numTask;
     this->_seed = std::chrono::steady_clock::now().time_since_epoch().count();
+    this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
-    this->_numAction = numProc + (numProc * (numProc - 1)) + 1;
+    this->_numAction = numProc + 1;
 
-    this->_generateActionMap();
     this->reset();
 }
 
@@ -39,7 +39,7 @@ void Environment::reset() {
 
     // Add processors
     for (int i = 0; i < this->_numProc; ++i) {
-        this->_processors.push_back(std::make_shared<Processor>(this->_maxDuration));
+        this->_processors.push_back(std::make_shared<Processor>(this->_maxThread));
     }
 
     std::mt19937 rng = std::mt19937(this->_seed);
@@ -54,7 +54,7 @@ void Environment::reset() {
     }
 }
 
-std::tuple<std::vector<std::shared_ptr<unsigned>>, int, bool> Environment::step(const unsigned action) {
+std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned action) {
     // Action out of bound guard
     if (action >= this->_numAction) {
         std::stringstream es;
@@ -63,7 +63,7 @@ std::tuple<std::vector<std::shared_ptr<unsigned>>, int, bool> Environment::step(
     }
 
     // Returning vars: nextState, reward, done
-    std::vector<std::shared_ptr<unsigned>> nextState;
+    std::vector<unsigned> nextState;
     int reward = 0;
     bool done = true;
 
@@ -73,31 +73,27 @@ std::tuple<std::vector<std::shared_ptr<unsigned>>, int, bool> Environment::step(
     }
 
     // Perform action
-    if (action == this->_numAction - 1) {
-        // MaxAction - 1: Do nothing action
-    } else if (action < this->_numProc) {
+    if (action < this->_numAction - 1) {
         // 0 -> (NumProc - 1): Move from queue to proc, with action being index of the proc to move to
         this->_moveFromQueue(action);
-    } else {
-        // NumProc -> (MaxAction - 2): Move from one proc to another
-        unsigned fromProc, toProc;
-        std::tie(fromProc, toProc) = this->_actionBetweenProcMap[action];
-        this->_moveBetweenProc(fromProc, toProc);
     }
+    reward -= 1;
 
     // Check done
-    for (const std::shared_ptr<Processor>& proc : this->_processors) {
-        nextState.push_back(std::make_unique<unsigned>(proc->getTotalProcessTime()));
-        if (proc->getTotalProcessTime() != 0) {
-            done = false;
-            reward = -1;
-        }
-    }
-
-    nextState.push_back(std::make_unique<unsigned>(this->_taskQueue.size()));
+    nextState.push_back(this->_taskQueue.size());
     if (!this->_taskQueue.empty()) {
         done = false;
-        reward = -1;
+    }
+
+    for (const std::shared_ptr<Processor>& proc : this->_processors) {
+        nextState.push_back(proc->getNumBusyThread());
+        if (proc->getNumBusyThread() != 0) {
+            done = false;
+        }
+
+        if (this->_taskQueue.size() != 0 && proc->getUtilization() < 0.2) {
+            reward -= 10;
+        }
     }
 
     if (this->_isDebug) {
@@ -115,8 +111,8 @@ unsigned Environment::getNumTask() const {
     return this->_numTask;
 }
 
-unsigned Environment::getMaxDuration() const {
-    return this->_maxDuration;
+unsigned Environment::getMaxThread() const {
+    return this->_maxThread;
 }
 
 unsigned Environment::getNumProc() const {
@@ -141,13 +137,8 @@ std::string Environment::toString() const {
     return result.str();
 }
 
-void Environment::_moveBetweenProc(const unsigned fromProc, const unsigned toProc) const {
-    const std::shared_ptr<Task> taskToMove = this->_processors.at(fromProc)->getLastInQueue();
-
-    // Processor is at max cap, re-queued back to the previous proc
-    if (taskToMove == nullptr || !this->_processors.at(toProc)->queue(taskToMove)) {
-        this->_processors.at(fromProc)->queue(taskToMove);
-    }
+void Environment::setDebug(const bool isDebug) {
+    this->_isDebug = isDebug;
 }
 
 void Environment::_moveFromQueue(const unsigned toProc) {
@@ -161,18 +152,5 @@ void Environment::_moveFromQueue(const unsigned toProc) {
     // Processor is at max cap, re-queued back to the task queue
     if (!this->_processors.at(toProc)->queue(t)) {
         this->_taskQueue.push_front(t);
-    }
-}
-
-void Environment::_generateActionMap() {
-    for (int a = 0; a < this->_numProc; ++a) {
-        for (int b = 0; b < this->_numProc; ++b) {
-            if (a == b) continue; // Skip pairs where a == b
-
-            // Compute ordinal number starting from NumProc
-            const unsigned ordinal = this->_numProc + a * (this->_numProc - 1) + (b < a ? b : b - 1);
-
-            this->_actionBetweenProcMap[ordinal] = std::make_tuple(a, b);
-        }
     }
 }
