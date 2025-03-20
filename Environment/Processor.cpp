@@ -1,14 +1,17 @@
 #include "Processor.h"
 
-Processor::Processor(const unsigned maxCapacity) {
-    this->_maxCapacity = maxCapacity;
+Processor::Processor(const unsigned maxThread) {
+    this->_maxThread = maxThread;
 }
 
 bool Processor::queue(const std::shared_ptr<Task> &task) {
-    const unsigned newTotalProcessTime = this->_totalProcessTime + task->getRemainingDuration();
-    if (newTotalProcessTime <= this->_maxCapacity) {
+    if (task == nullptr) {
+        return false;
+    }
+
+    if (this->_tasks.size() < this->_maxThread) {
         this->_tasks.push_back(task);
-        this->_totalProcessTime = newTotalProcessTime;
+        this->_totalProcessTime += task->getRemainingDuration();
 
         return true;
     }
@@ -17,13 +20,12 @@ bool Processor::queue(const std::shared_ptr<Task> &task) {
 }
 
 void Processor::tick() {
-    if (!this->_tasks.empty()) {
-        const std::shared_ptr<Task> nextTask = this->_tasks.front();
-
-        // Reduce first task's duration. If duration is 0 then task is considered done, remove
-        nextTask->tick();
-        if (nextTask->isFinished()) {
-            _tasks.erase(_tasks.begin());
+    for (unsigned i = 0; i < this->_tasks.size(); i++) {
+        // Reduce task's duration. If duration is 0 then task is considered done, remove
+        this->_tasks[i]->tick();
+        if (this->_tasks[i]->isFinished()) {
+            this->_tasks.erase(_tasks.begin() + i);
+            --i;
         }
 
         // Reduce total process time
@@ -38,20 +40,11 @@ unsigned Processor::getTotalProcessTime() const {
 }
 
 float Processor::getUtilization() const {
-    return static_cast<float>(this->_totalProcessTime) / static_cast<float>(this->_maxCapacity);
+    return static_cast<float>(this->_tasks.size()) / static_cast<float>(this->_maxThread);
 }
 
-std::shared_ptr<Task> Processor::getLastInQueue() {
-    if (this->_tasks.size() <= 1) {
-        return nullptr;
-    }
-
-    // Reduce total duration
-    this->_totalProcessTime -= this->_tasks.back()->getRemainingDuration();
-
-    // Detach from queue and return Task
-    std::shared_ptr<Task> t = this->_tasks.back();
-    this->_tasks.pop_back();
-
-    return t;
+unsigned Processor::getNumBusyThread() const {
+    return this->_tasks.size();
 }
+
+
