@@ -5,11 +5,13 @@
 #include <random>
 #include <sstream>
 
-Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxDuration, const unsigned seed, const bool isDebug) {
+Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxThread,
+        const unsigned maxDuration, const unsigned seed, const bool isDebug) {
     this->_isDebug = isDebug;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
     this->_numTask = numTask;
     this->_seed = seed;
+    this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc + 1;
@@ -17,11 +19,13 @@ Environment::Environment(const unsigned numProc, const unsigned numTask, const u
     this->reset();
 }
 
-Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxDuration, const bool isDebug) {
+Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxThread,
+        const unsigned maxDuration, const bool isDebug) {
     this->_isDebug = isDebug;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
     this->_numTask = numTask;
     this->_seed = std::chrono::steady_clock::now().time_since_epoch().count();
+    this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc + 1;
@@ -35,7 +39,7 @@ void Environment::reset() {
 
     // Add processors
     for (int i = 0; i < this->_numProc; ++i) {
-        this->_processors.push_back(std::make_shared<Processor>(this->_maxDuration));
+        this->_processors.push_back(std::make_shared<Processor>(this->_maxThread));
     }
 
     std::mt19937 rng = std::mt19937(this->_seed);
@@ -82,12 +86,12 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
     }
 
     for (const std::shared_ptr<Processor>& proc : this->_processors) {
-        nextState.push_back(proc->getTotalProcessTime());
-        if (proc->getTotalProcessTime() != 0) {
+        nextState.push_back(proc->getNumBusyThread());
+        if (proc->getNumBusyThread() != 0) {
             done = false;
         }
 
-        if (proc->getUtilization() < 0.5) {
+        if (this->_taskQueue.size() != 0 && proc->getUtilization() < 0.2) {
             reward -= 10;
         }
     }
@@ -107,8 +111,8 @@ unsigned Environment::getNumTask() const {
     return this->_numTask;
 }
 
-unsigned Environment::getMaxDuration() const {
-    return this->_maxDuration;
+unsigned Environment::getMaxThread() const {
+    return this->_maxThread;
 }
 
 unsigned Environment::getNumProc() const {

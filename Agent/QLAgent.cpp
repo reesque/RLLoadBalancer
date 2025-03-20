@@ -10,9 +10,9 @@ QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, con
     this->_gamma = gamma;
     this->_epsilon = epsilon;
 
-    this->_q = std::vector(env->getNumTask() + 1, std::vector(env->getMaxDuration() + 1,std::vector(
-        env->getMaxDuration() + 1, std::vector(env->getMaxDuration() + 1, std::vector(
-            env->getMaxDuration() + 1,std::vector(env->getNumAction(), 10.0f))))));
+    this->_q = std::vector(env->getNumTask() + 1, std::vector(env->getMaxThread() + 1,std::vector(
+        env->getMaxThread() + 1, std::vector(env->getMaxThread() + 1, std::vector(
+            env->getMaxThread() + 1,std::vector(env->getNumAction(), 10.0f))))));
 }
 
 unsigned QLAgent::getBehaviorPolicy(const std::vector<unsigned> s) {
