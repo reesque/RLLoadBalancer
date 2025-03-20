@@ -1,88 +1,116 @@
 #include "QLearningAgent.h"
+#include <iostream>
 #include <algorithm>
 #include <random>
 
 // Constructor and init Q_table
-QLearningAgent::QLearningAgent(int states, int actions, double alpha, double gamma, double epsilon, std::shared_ptr<Environment> environment)
-    : BaseAgent(environment), num_states(states), num_actions(actions), alpha(alpha), gamma(gamma), epsilon(epsilon) {
-        this->Q_table = std::vector<std::vector<double>>(this->num_states, std::vector<double>(this->num_actions, 0.0));
+QLearningAgent::QLearningAgent(double alpha, double gamma, double epsilon, const std::shared_ptr<Environment> &environment)
+    : environment(environment), alpha(alpha), gamma(gamma), epsilon(epsilon) {
+        this->Q_table = std::vector(environment->getNumTask() + 1, std::vector(environment->getMaxThread() + 1,std::vector(
+            environment->getMaxThread() + 1, std::vector(environment->getMaxThread() + 1, std::vector(
+                environment->getMaxThread() + 1,std::vector(environment->getNumAction(), 10.0f))))));
 };
 
-int QLearningAgent::choose_action(int state) {
+unsigned QLearningAgent::argmax(std::vector<float> v) {
+    double max_value = *std::max_element(v.begin(), v.end());
+
+    // Collect all actions that have the max Q-value
+    std::vector<int> best_actions; // All actions that have the max Q-value
+    for (int i = 0; i < v.size(); i++) {
+        if (v[i] == max_value) {
+            best_actions.push_back(i);
+        }
+    }
+
+    // Random uniform Tie-breaker
+    std::random_device rd;   // seed
+    std::mt19937 gen(rd());  // Mersenne Twister PRNG
+    std::uniform_int_distribution<int> best_action_dist(0, best_actions.size() - 1);
+    return best_actions[best_action_dist(gen)];
+}
+
+
+unsigned QLearningAgent::getBehaviorPolicy(std::vector<unsigned> s) {
     // Random number generator
-    std::random_device rd;   // seed is device
+    std::random_device rd;   // seed
     std::mt19937 gen(rd());  // Mersenne Twister PRNG
     std::uniform_real_distribution<double> dis(0.0, 1.0);
 
     // decide whether behavior policy AND do exploration (e-soft)
-    if (is_training && dis(gen) < epsilon) {
-        std::uniform_int_distribution<int> action_dist(0, this->num_actions - 1);
+    if (dis(gen) < this->epsilon) {
+        std::uniform_int_distribution<int> action_dist(0, this->environment->getNumAction() - 1);
         return action_dist(gen);
     } else { // or exploitation (greedy)
-        double max_value = *std::max_element(this->Q_table[state].begin(), this->Q_table[state].end());
-
-        // Collect all actions that have the max Q-value
-        std::vector<int> best_actions; // All actions that have the max Q-value
-        for (int i = 0; i < this->num_actions; i++) {
-            if (this->Q_table[state][i] == max_value) {
-                best_actions.push_back(i);
-            }
-        }
-
-        // Random uniform Tie-breaker
-        std::uniform_int_distribution<int> best_action_dist(0, best_actions.size() - 1);
-        return best_actions[best_action_dist(gen)];
+       return getTargetPolicy(s);
     }
 }
 
-void QLearningAgent::update(int state, int action, int next_state, double reward) {
+unsigned QLearningAgent::getTargetPolicy(std::vector<unsigned> s) {
+    std::vector<float> v = this->Q_table[s[0]][s[1]][s[2]][s[3]][s[4]];
+    return argmax(v);
+}
+
+void QLearningAgent::update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime) {
     // Assumming terminal state will always be next_state, don't have to check for NULL next_state
-    double best_next_action_value = *std::max_element(this->Q_table[next_state].begin(), this->Q_table[next_state].end()); // np.max(Q[s'])
-    double td_target = reward + this->gamma * best_next_action_value;
-    this->Q_table[state][action] += this->alpha * (td_target - this->Q_table[state][action]);
+    std::vector<float> QSPrime_v = this->Q_table[sPrime[0]][sPrime[1]][sPrime[2]][sPrime[3]][sPrime[4]];
+    double best_next_action_value = *std::max_element(QSPrime_v.begin(), QSPrime_v.end()); // np.max(Q[s'])
+    double td_target = r + this->gamma * best_next_action_value;
+    this->Q_table[s[0]][s[1]][s[2]][s[3]][s[4]][a] += this->alpha * (td_target - this->Q_table[s[0]][s[1]][s[2]][s[3]][s[4]][a]);
 }
 
 void QLearningAgent::train(unsigned episodes) {
-    if (!this->env) {
+    if (!this->environment) {
         std::cerr << "ERROR: you forgot to set environment. Somehow." << std::endl;
         return;
     }
 
-    // Ensure agent is in training mode
-    train_mode();
-
     for (unsigned episode = 0; episode < episodes; ++episode) {
-        this->env->reset();
-        int state = 0;
+        this->environment->setDebug(false);
+        this->environment->reset();
+
+        std::vector<unsigned> state = {this->environment->getNumTask(), 0, 0, 0, 0};
         bool done = false;
+        std::cout << "Episode " << episode << std::endl;
 
         while (!done) {
-            int action = choose_action(state);  // Now guaranteed to use ε-greedy
+            
+            int action = getBehaviorPolicy(state); 
 
-            std::vector<std::shared_ptr<unsigned int>> next_state_vector;
+            std::vector<unsigned> next_state;
             int reward;
             bool is_done;
-            std::tie(next_state_vector, reward, is_done) = this->env->step(action);
+            std::tie(next_state, reward, is_done) = this->environment->step(action);
 
-            int next_state = *(next_state_vector.front());  // Dereference shared_ptr<unsigned>
-            update(state, action, next_state, reward);
+            update(state, action, reward, next_state);
 
             state = next_state;
             done = is_done;
         }
+        std::cout << "Done!" << std::endl;
     }
 }
 
-// idk if I should keep this
-void QLearningAgent::print_Q_table() const {
-    std::cout << "Q_table:\n";
-    for (const auto& row : this->Q_table) {
-        for (double q_value : row) {
-            std::cout << q_value << "\t";
-        }
-        std::cout << std::endl;
+void QLearningAgent::rollout() {
+    //Borrowed
+    this->environment->setDebug(true);
+    this->environment->reset();
+    std::vector<unsigned> state = {this->environment->getNumTask(), 0, 0, 0, 0};
+    bool done = false;
+    unsigned t = 0;
+    while (!done) {
+        int action = getTargetPolicy(state);  // Now guaranteed to use ε-greedy
+
+        std::vector<unsigned> next_state;
+        int reward;
+        bool is_done;
+        std::tie(next_state, reward, is_done) = this->environment->step(action);
+
+        update(state, action, reward, next_state);
+
+        state = next_state;
+        done = is_done;
+        ++t;
     }
+    std::cout << "Done!" << std::endl;
+    std::cout << "Took " << t << " time steps to finish!" << std::endl;
 }
-    
-
-

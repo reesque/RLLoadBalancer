@@ -1,29 +1,28 @@
 #ifndef QLEARNINGAGENT_H
 #define QLEARNINGAGENT_H
 
-#include <iostream>
-#include <vector>
-#include <memory>
 #include "BaseAgent.h"
-#include "Environment.h"
+#include "../Environment/Environment.h"
 
 class QLearningAgent : public BaseAgent {
 private:
-    int num_states;
-    int num_actions;
     double alpha;
     double gamma;
     double epsilon;
-    std::vector<std::vector<double>> Q_table;
+    std::shared_ptr<Environment> environment;
+    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<float>>>>>> Q_table;
+
+    unsigned argmax(std::vector<float> v);
 
 public:
     // Constructor now requires an Environment pointer
-    QLearningAgent(int states, int actions, double alpha, double gamma, double epsilon, std::shared_ptr<Environment> environment);
+    explicit QLearningAgent(double alpha, double gamma, double epsilon, const std::shared_ptr<Environment> &environment);
 
-    int choose_action(int state) override;
-    void update(int state, int action, int next_state, double reward);
+    unsigned getBehaviorPolicy(std::vector<unsigned> s) override;
+    unsigned getTargetPolicy(std::vector<unsigned> s) override;
+    void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime) override;
     void train(unsigned episodes);
-    void print_Q_table() const; // idk if I should keep
+    void rollout();
 };
 
 #endif // QLEARNINGAGENT_H
