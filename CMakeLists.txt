@@ -18,5 +18,9 @@ add_executable(RLLoadBalancer main.cpp
         Agent/QLAgent.h
         Utils/ProgressBar.cpp
         Utils/ProgressBar.h
+        DecayScheduler/DecayScheduler.h
+        DecayScheduler/LinearDecayScheduler.cpp
+        DecayScheduler/LinearDecayScheduler.h
+        DecayScheduler/DecayScheduler.cpp
 )
 target_link_libraries(RLLoadBalancer "${TORCH_LIBRARIES}")

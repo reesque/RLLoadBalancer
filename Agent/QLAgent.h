@@ -3,13 +3,14 @@
 #include <random>
 #include <torch/torch.h>
 #include "BaseAgent.h"
+#include "../DecayScheduler/DecayScheduler.h"
 #include "../Environment/Environment.h"
 
-class QLAgent: BaseAgent {
+class QLAgent : public BaseAgent {
 public:
-    explicit QLAgent(const std::shared_ptr<Environment> &env, float alpha, float gamma, float epsilon);
-    explicit QLAgent(const std::shared_ptr<Environment> &env, float alpha, float gamma, float epsilon, unsigned seed);
-    unsigned getBehaviorPolicy(std::vector<unsigned> s) override;
+    QLAgent(const std::shared_ptr<Environment> &env, float alpha, float gamma, const std::shared_ptr<DecayScheduler> &decayScheduler);
+    QLAgent(const std::shared_ptr<Environment> &env, float alpha, float gamma, const std::shared_ptr<DecayScheduler> &decayScheduler, unsigned seed);
+    unsigned getBehaviorPolicy(std::vector<unsigned> s, unsigned t) override;
     unsigned getTargetPolicy(std::vector<unsigned> s) override;
     void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime) override;
     void train(unsigned numRun);
@@ -18,7 +19,7 @@ private:
     std::shared_ptr<Environment> _env;
     float _alpha;
     float _gamma;
-    float _epsilon;
+    std::shared_ptr<DecayScheduler> _decayScheduler;
     std::mt19937 _randomizer;
     torch::Tensor _q;
 

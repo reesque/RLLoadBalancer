@@ -3,11 +3,12 @@
 #include <iostream>
 #include "../Utils/ProgressBar.h"
 
-QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, const float gamma, const float epsilon) {
+QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, const float gamma,
+                    const std::shared_ptr<DecayScheduler> &decayScheduler) {
     this->_env = env;
     this->_alpha = alpha;
     this->_gamma = gamma;
-    this->_epsilon = epsilon;
+    this->_decayScheduler = decayScheduler;
     this->_randomizer = std::mt19937(std::random_device()());
 
     std::vector<int64_t> qShape = {env->getNumTask() + 1};
@@ -22,11 +23,11 @@ QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, con
 }
 
 QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, const float gamma,
-                    const float epsilon, const unsigned seed) {
+                    const std::shared_ptr<DecayScheduler> &decayScheduler, const unsigned seed) {
     this->_env = env;
     this->_alpha = alpha;
     this->_gamma = gamma;
-    this->_epsilon = epsilon;
+    this->_decayScheduler = decayScheduler;
     this->_randomizer = std::mt19937(seed);
 
     std::vector<int64_t> qShape = {env->getNumTask() + 1};
@@ -40,11 +41,11 @@ QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, con
     this->_q = torch::full(qShape, 10.0f, torch::TensorOptions().dtype(torch::kFloat));
 }
 
-unsigned QLAgent::getBehaviorPolicy(const std::vector<unsigned> s) {
+unsigned QLAgent::getBehaviorPolicy(const std::vector<unsigned> s, const unsigned t) {
     auto randChance = std::uniform_real_distribution<float>(0, 1);
 
     float chance = randChance(this->_randomizer);
-    if (chance < this->_epsilon) {
+    if (chance < this->_decayScheduler->getValue(t)) {
         auto randAllAction = std::uniform_int_distribution<unsigned>(0, this->_env->getNumAction() - 1);
         return randAllAction(this->_randomizer);
     }
@@ -67,15 +68,15 @@ void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const int 
 
 void QLAgent::train(const unsigned numRun) {
     this->_env->setDebug(false);
-    auto pb = ProgressBar("Training", numRun, [this]() {
+    auto pb = ProgressBar("Training", numRun, [this](const unsigned it) {
         std::vector<unsigned> s = this->_env->reset();
         bool done = false;
-        unsigned a = getBehaviorPolicy(s);
+        unsigned a = getBehaviorPolicy(s, it);
         while (!done) {
             int r = 0;
             std::vector<unsigned> sPrime;
             std::tie(sPrime, r, done) = this->_env->step(a);
-            const unsigned aPrime = getBehaviorPolicy(s);
+            const unsigned aPrime = getBehaviorPolicy(s, it);
 
             this->update(s, a, r, sPrime);
 

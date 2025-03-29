@@ -4,7 +4,7 @@
 #include <iostream>
 
 ProgressBar::ProgressBar(const std::string &label, const unsigned total,
-                            const std::function<void()> &execFunc, const unsigned width) {
+                            const std::function<void(unsigned it)> &execFunc, const unsigned width) {
     this->_label = label;
     this->_progress = 0;
     this->_total = total;
@@ -12,7 +12,7 @@ ProgressBar::ProgressBar(const std::string &label, const unsigned total,
     this->_totalTime = 0;
 
     for (unsigned i = 0; i < this->_total; i++) {
-        execFunc();
+        execFunc(i);
         this->_tick();
     }
 }
