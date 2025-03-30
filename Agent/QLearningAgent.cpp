@@ -70,7 +70,7 @@ void QLearningAgent::train(unsigned episodes) {
 
         std::vector<unsigned> state = {this->environment->getNumTask(), 0, 0, 0, 0};
         bool done = false;
-        std::cout << "Episode " << episode << std::endl;
+        // std::cout << "Episode " << episode << std::endl;
 
         while (!done) {
             
@@ -86,7 +86,7 @@ void QLearningAgent::train(unsigned episodes) {
             state = next_state;
             done = is_done;
         }
-        std::cout << "Done!" << std::endl;
+        // std::cout << "Done!" << std::endl;
     }
 }
 

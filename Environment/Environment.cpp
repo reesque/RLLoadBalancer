@@ -103,6 +103,69 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
     return std::make_tuple(nextState, reward, done);
 }
 
+std::tuple<std::vector<unsigned>, int, bool> Environment::simulate_step(const std::vector<unsigned>& state, unsigned action) {
+    // Action out of bound guard
+    if (action >= this->_numAction) {
+        std::stringstream es;
+        es << "Given action out of range: " << action << std::endl;
+        throw std::invalid_argument(es.str());
+    }
+
+    // Returning vars: nextState, reward, done
+    std::vector<unsigned> nextState;
+    int reward = 0;
+    bool done = true;
+
+    // Pseudo-Processors for simulation
+    unsigned num_proc = this->getNumProc();
+    unsigned max_threads = this->getMaxThread();
+    unsigned num_tasks = state[0];  // task queue size
+    std::vector<unsigned> proc_threads(state.begin() + 1, state.end()); // from s[1] to s[4]
+
+    // Simulate tick: decrese one thread per processor
+    for (unsigned& threads : proc_threads) {
+        // proc->tick();
+        if (threads > 0) {
+            threads -= 1;
+        }
+    }
+
+    // Perform action
+    if (action < num_proc && num_tasks > 0 && proc_threads[action] < max_threads) {
+        proc_threads[action] += 1;
+        num_tasks -= 1;
+    }
+
+    // Adjust reward
+    reward -= 1;
+
+    for (unsigned i = 0; i < num_proc; ++i) {
+        float utilization = static_cast<float>(proc_threads[i]) / max_threads;
+        if (num_tasks > 0 && utilization < 0.2f) {
+            reward -= 10;
+        }
+    }
+
+    // Check done
+    done = (num_tasks == 0);
+    for (unsigned threads: proc_threads) {
+        if (threads > 0) {
+            done = false;
+            break;
+        }
+    }
+
+    if (this->_isDebug) {
+        std::cout <<  "haven't implement this yet uhhhhh ohhh" << std::endl;
+    }
+
+
+    nextState.push_back(num_tasks);
+    nextState.insert(nextState.end(), proc_threads.begin(), proc_threads.end());
+
+    return std::make_tuple(nextState, reward, done);
+}
+
 unsigned Environment::getNumAction() const {
     return this->_numAction;
 }
