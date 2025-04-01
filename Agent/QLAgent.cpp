@@ -66,12 +66,14 @@ void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const int 
     this->_q.index(this->_getIndicesTensor(s, a)) += this->_alpha * (r + nextQ - currentQ);
 }
 
-void QLAgent::train(const unsigned numRun) {
+std::vector<int> QLAgent::train(const unsigned numEpisode) {
     this->_env->setDebug(false);
-    auto pb = ProgressBar("Training", numRun, [this](const unsigned it) {
+    std::vector<int> rewards = {};
+    auto pb = ProgressBar("Training", numEpisode, [this, &rewards](const unsigned it) {
         std::vector<unsigned> s = this->_env->reset();
         bool done = false;
         unsigned a = getBehaviorPolicy(s, it);
+        int episodeRewards = 0;
         while (!done) {
             int r = 0;
             std::vector<unsigned> sPrime;
@@ -80,10 +82,15 @@ void QLAgent::train(const unsigned numRun) {
 
             this->update(s, a, r, sPrime);
 
+            episodeRewards += r;
             s = sPrime;
             a = aPrime;
         }
+
+        rewards.push_back(episodeRewards);
     });
+
+    return rewards;
 }
 
 void QLAgent::rollout() {
@@ -123,7 +130,7 @@ unsigned QLAgent::_argmax(const torch::Tensor& v) {
     return maxIndices[dist(this->_randomizer)];
 }
 
-std::vector<at::indexing::TensorIndex> QLAgent::_getIndicesTensor(const std::vector<unsigned> s) {
+std::vector<at::indexing::TensorIndex> QLAgent::_getIndicesTensor(const std::vector<unsigned> &s) {
     std::vector<at::indexing::TensorIndex> shape = {};
 
     for (int i = 0; i < s.size(); ++i) {
@@ -133,7 +140,7 @@ std::vector<at::indexing::TensorIndex> QLAgent::_getIndicesTensor(const std::vec
     return shape;
 }
 
-std::vector<at::indexing::TensorIndex> QLAgent::_getIndicesTensor(const std::vector<unsigned> s, const unsigned a) {
+std::vector<at::indexing::TensorIndex> QLAgent::_getIndicesTensor(const std::vector<unsigned> &s, const unsigned a) {
     std::vector<at::indexing::TensorIndex> shape = {};
 
     for (int i = 0; i < s.size(); ++i) {

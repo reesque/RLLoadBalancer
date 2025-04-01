@@ -13,7 +13,7 @@ public:
     unsigned getBehaviorPolicy(std::vector<unsigned> s, unsigned t) override;
     unsigned getTargetPolicy(std::vector<unsigned> s) override;
     void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime) override;
-    void train(unsigned numRun);
+    std::vector<int> train(unsigned numEpisode);
     void rollout();
 private:
     std::shared_ptr<Environment> _env;
@@ -24,8 +24,8 @@ private:
     torch::Tensor _q;
 
     unsigned _argmax(const torch::Tensor& v);
-    static std::vector<at::indexing::TensorIndex> _getIndicesTensor(std::vector<unsigned> s);
-    static std::vector<at::indexing::TensorIndex> _getIndicesTensor(std::vector<unsigned> s, unsigned a);
+    static std::vector<at::indexing::TensorIndex> _getIndicesTensor(const std::vector<unsigned> &s);
+    static std::vector<at::indexing::TensorIndex> _getIndicesTensor(const std::vector<unsigned> &s, unsigned a);
 };
 
 #endif //QLAGENT_H

@@ -93,8 +93,8 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
             done = false;
         }
 
-        if (this->_taskQueue.size() != 0 && proc->getUtilization() < 0.2) {
-            reward -= 10;
+        if (!this->_taskQueue.empty() && proc->getUtilization() < 0.2) {
+            reward -= 1;
         }
     }
 
