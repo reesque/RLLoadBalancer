@@ -15,4 +15,6 @@ add_executable(RLLoadBalancer main.cpp
         Agent/BaseAgent.h
         Agent/QLAgent.cpp
         Agent/QLAgent.h
+        Agent/QLearningAgent.cpp
+        Agent/QLearningAgent.h
 )
