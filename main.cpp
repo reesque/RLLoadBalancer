@@ -1,12 +1,11 @@
 #include "Agent/QLAgent.h"
+#include "Agent/DPAgent.h"
 #include "DecayScheduler/LinearDecayScheduler.h"
 #include "Environment/Environment.h"
 #include "Utils/Plot.h"
 
 int main() {
-    // Hyperparamters
     const unsigned seed = 123;
-
     const unsigned numProc = 4;
     const unsigned numThread = 4;
     const unsigned numTask = 40;
@@ -19,6 +18,8 @@ int main() {
     const float alpha = 0.5;
     const float gamma = 1.0;
 
+    const float theta = 0.01;
+
     const unsigned numRun = 10;
     const unsigned numEpisode = 100000;
 
@@ -29,15 +30,17 @@ int main() {
     const auto env = std::make_shared<Environment>(numProc, numTask, numThread, maxTaskDuration, seed);
     const auto ds = std::make_shared<LinearDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
 
-    std::unique_ptr<QLAgent> agent;
-    for (unsigned i = 0; i < numRun; i++) {
-        agent = std::make_unique<QLAgent>(env, alpha, gamma, ds, seed);
-        rewards.push_back(agent->train(numEpisode));
-    }
+    auto dp = DPAgent(env, 1.0, 0.01);
+    dp.run_value_iteration();
 
-    agent->rollout();
+    //std::unique_ptr<QLAgent> agent;
+    //for (unsigned i = 0; i < numRun; i++) {
+    //    agent = std::make_unique<QLAgent>(env, alpha, gamma, ds, seed);
+    //    rewards.push_back(agent->train(numEpisode));
+    //}
 
-    Plot::AverageRewardsOverEpisodes(rewards);
+    //agent->rollout();
 
+    //Plot::AverageRewardsOverEpisodes(rewards);
     return 0;
 }
