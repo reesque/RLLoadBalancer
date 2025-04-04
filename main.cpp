@@ -30,17 +30,19 @@ int main() {
     const auto env = std::make_shared<Environment>(numProc, numTask, numThread, maxTaskDuration, seed);
     const auto ds = std::make_shared<LinearDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
 
-    auto dp = DPAgent(env, 1.0, 0.01);
+    // Run DP
+    auto dp = DPAgent(env, gamma, theta);
     dp.run_value_iteration();
 
-    //std::unique_ptr<QLAgent> agent;
-    //for (unsigned i = 0; i < numRun; i++) {
-    //    agent = std::make_unique<QLAgent>(env, alpha, gamma, ds, seed);
-    //    rewards.push_back(agent->train(numEpisode));
-    //}
+    // Run Q Learning
+    std::unique_ptr<QLAgent> agent;
+    for (unsigned i = 0; i < numRun; i++) {
+        agent = std::make_unique<QLAgent>(env, alpha, gamma, ds, seed);
+        rewards.push_back(agent->train(numEpisode));
+    }
 
-    //agent->rollout();
+    agent->rollout();
 
-    //Plot::AverageRewardsOverEpisodes(rewards);
+    Plot::AverageRewardsOverEpisodes(rewards);
     return 0;
 }
