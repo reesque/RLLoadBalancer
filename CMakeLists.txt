@@ -16,6 +16,8 @@ add_executable(RLLoadBalancer main.cpp
         Environment/Processor.cpp
         Environment/Processor.h
         Agent/BaseAgent.h
+        Agent/DQNAgent.h
+        Agent/DQNAgent.cpp
         Agent/QLAgent.cpp
         Agent/QLAgent.h
         Utils/ProgressBar.cpp
