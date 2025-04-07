@@ -9,7 +9,8 @@ class Processor {
 public:
     explicit Processor(unsigned maxThread);
     bool queue(const std::shared_ptr<Task> &task);
-    unsigned getTotalProcessTime() const;
+    unsigned getTotalProcessTime() const;\
+    std::vector<unsigned> getThreadsLength() const;
     float getUtilization() const;
     unsigned getNumBusyThread() const;
     void tick();

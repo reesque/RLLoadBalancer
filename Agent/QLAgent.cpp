@@ -11,15 +11,17 @@ QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, con
     this->_decayScheduler = decayScheduler;
     this->_randomizer = std::mt19937(std::random_device()());
 
-    std::vector<int64_t> qShape = {env->getNumTask() + 1};
+    std::vector<int64_t> qShape = {env->getMaxDuration() + 1};
 
     for (int proc = 0; proc < env->getNumProc(); ++proc) {
-        qShape.push_back(env->getMaxThread() + 1);
+        for (int thread = 0; thread < env->getMaxThread(); ++thread) {
+            qShape.push_back(env->getMaxDuration() + 1);
+        }
     }
-
+ 
     qShape.push_back(env->getNumAction());
 
-    this->_q = torch::full(qShape, 10.0f, torch::TensorOptions().dtype(torch::kFloat));
+    this->_q = torch::full(qShape, 10.0f, torch::TensorOptions().dtype(torch::kBFloat16));
 }
 
 QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, const float gamma,
@@ -30,15 +32,17 @@ QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, con
     this->_decayScheduler = decayScheduler;
     this->_randomizer = std::mt19937(seed);
 
-    std::vector<int64_t> qShape = {env->getNumTask() + 1};
+    std::vector<int64_t> qShape = {env->getMaxDuration() + 1};
 
     for (int proc = 0; proc < env->getNumProc(); ++proc) {
-        qShape.push_back(env->getMaxThread() + 1);
+        for (int thread = 0; thread < env->getMaxThread(); ++thread) {
+            qShape.push_back(env->getMaxDuration() + 1);
+        }
     }
 
     qShape.push_back(env->getNumAction());
 
-    this->_q = torch::full(qShape, 10.0f, torch::TensorOptions().dtype(torch::kFloat));
+    this->_q = torch::full(qShape, 10.0f, torch::TensorOptions().dtype(torch::kBFloat16));
 }
 
 unsigned QLAgent::getBehaviorPolicy(const std::vector<unsigned> s, const unsigned t) {
@@ -58,12 +62,12 @@ unsigned QLAgent::getTargetPolicy(const std::vector<unsigned> s) {
     return _argmax(qs);
 }
 
-void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const int r, const std::vector<unsigned> sPrime) {
+void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const int r, const std::vector<unsigned> sPrime, const bool done) {
     const unsigned bestAPrime = getTargetPolicy(sPrime);
     const auto nextQ = this->_q.index(this->_getIndicesTensor(sPrime, bestAPrime)).item<float>();
     const auto currentQ = this->_q.index(this->_getIndicesTensor(s, a)).item<float>();
 
-    this->_q.index(this->_getIndicesTensor(s, a)) += this->_alpha * (r + nextQ - currentQ);
+    this->_q.index(this->_getIndicesTensor(s, a)) += this->_alpha * (r + this->_gamma * nextQ - currentQ);
 }
 
 std::vector<int> QLAgent::train(const unsigned numEpisode) {
@@ -80,7 +84,7 @@ std::vector<int> QLAgent::train(const unsigned numEpisode) {
             std::tie(sPrime, r, done) = this->_env->step(a);
             const unsigned aPrime = getBehaviorPolicy(s, it);
 
-            this->update(s, a, r, sPrime);
+            this->update(s, a, r, sPrime, done);
 
             episodeRewards += r;
             s = sPrime;
@@ -104,8 +108,6 @@ void QLAgent::rollout() {
         std::vector<unsigned> sPrime;
         std::tie(sPrime, r, done) = this->_env->step(a);
         const unsigned aPrime = getTargetPolicy(s);
-
-        this->update(s, a, r, sPrime);
 
         s = sPrime;
         a = aPrime;
@@ -141,11 +143,7 @@ std::vector<at::indexing::TensorIndex> QLAgent::_getIndicesTensor(const std::vec
 }
 
 std::vector<at::indexing::TensorIndex> QLAgent::_getIndicesTensor(const std::vector<unsigned> &s, const unsigned a) {
-    std::vector<at::indexing::TensorIndex> shape = {};
-
-    for (int i = 0; i < s.size(); ++i) {
-        shape.push_back(at::indexing::TensorIndex(static_cast<int64_t>(s[i])));
-    }
+    std::vector<at::indexing::TensorIndex> shape = _getIndicesTensor(s);
 
     shape.push_back(at::indexing::TensorIndex(static_cast<int64_t>(a)));
 

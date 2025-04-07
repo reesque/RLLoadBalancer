@@ -1,36 +1,17 @@
 #include "DPAgent.h"
 
-#include <algorithm>
 #include <sstream>
 
-/**
- * 
- */
-DPAgent::DPAgent(const std::shared_ptr<Environment> &environment, double gamma, double theta) 
-    : environment(environment), gamma(gamma), theta(theta) {}
+DPAgent::DPAgent(const std::shared_ptr<Environment> &environment, const float gamma, const float theta)
+    : environment(environment), gamma(gamma), theta(theta) {
 
-/**
- * Convert input state matrix to V-table string key
- */
-std::string DPAgent::state_to_key(const std::vector<unsigned>& s) const {
-    std::stringstream ss;
-    for (unsigned v : s) {
-        ss << v << ",";
-    }
-    return ss.str();
-}
-
-void DPAgent::run_value_iteration() {
-    unsigned num_actions = this->environment->getNumAction();
-    unsigned max_task = this->environment->getNumTask();
-    unsigned max_thread = this->environment->getMaxThread();
-    unsigned num_proc = this->environment->getNumProc();
+    const unsigned max_task = this->environment->getMaxDuration();
+    const unsigned max_thread = this->environment->getMaxThread();
+    const unsigned num_proc = this->environment->getNumProc();
 
     // Build all possible states
-    std::vector<std::vector<unsigned>> all_states;
-
     for (unsigned t = 0; t <= max_task; ++t) {
-        std::vector<unsigned> init = {t};
+        const std::vector init = {t};
         std::vector<std::vector<unsigned>> partial_states = {init};
 
         for (unsigned p = 0; p < num_proc; ++p) {
@@ -47,35 +28,44 @@ void DPAgent::run_value_iteration() {
 
         all_states.insert(all_states.end(), partial_states.begin(), partial_states.end());
     }
+}
 
-    // Initialize V(s) = 0
-    for (const auto& s : all_states) {
-        this->V[state_to_key(s)] = 0.0;
+std::string DPAgent::state_to_key(const std::vector<unsigned>& s) const {
+    std::stringstream ss;
+    for (unsigned v : s) {
+        ss << v << ",";
     }
+    return ss.str();
+}
+
+void DPAgent::update(std::vector<unsigned> s, const unsigned a, const int r, std::vector<unsigned> sPrime, const bool done) {
+    const std::string skey = state_to_key(s);
+    const float v_prime = done ? 0.0 : V[state_to_key(sPrime)];
+    float q = static_cast<float>(r) + gamma * v_prime;
+
+    if (q > V[skey]) {
+        this->V[skey] = q;
+        this->policy[skey] = a;
+    }
+}
+
+void DPAgent::runValueIteration() {
+    const unsigned num_actions = this->environment->getNumAction();
+
+    reset();
 
     // Value Iteration Loop
     bool converged = false;
     while (!converged) {
         converged = true;
         for (const auto& s : all_states) {
-            std::string skey = state_to_key(s);
-            double old_v = this->V[skey];
-            double best_v = -std::numeric_limits<double>::infinity();
-            unsigned best_a = 0;
-
+            const float old_v = V[state_to_key(s)];
+            V[state_to_key(s)] = -std::numeric_limits<double>::infinity();
             for (unsigned a = 0; a < num_actions; ++a) {
-                auto [s_prime, r, done] = this->environment->simulateStep(s, a);
-                double v_prime = done ? 0.0 : V[state_to_key(s_prime)];
-                double q = r + gamma * v_prime;
-
-                if (q > best_v) {
-                    best_v = q;
-                    best_a = a;
-                }
+                auto [sPrime, r, done] = this->environment->simulateStep(s, a);
+                this->update(s, a, r, sPrime, done);
             }
-
-            this->V[skey] = best_v;
-            this->policy[skey] = best_a;
+            float best_v = V[state_to_key(s)];
 
             if (std::abs(best_v - old_v) > theta) {
                 converged = false;
@@ -84,10 +74,41 @@ void DPAgent::run_value_iteration() {
     }
 }
 
-double DPAgent::get_value(const std::vector<unsigned>& s) const {
-    return this->V.at(state_to_key(s));
+float DPAgent::rollout() {
+    reset();
+
+    bool done = false;
+    std::vector<unsigned> s = this->environment->reset();
+    unsigned a = getTargetPolicy(s);
+    float totalReward = 0.0;
+    float discount = 1.0;
+    while (!done) {
+        std::string skey = state_to_key(s);
+        int r = 0;
+        std::vector<unsigned> sPrime;
+        std::tie(sPrime, r, done) = this->environment->simulateStep(s, a);
+        const unsigned aPrime = getTargetPolicy(sPrime);
+
+        totalReward += discount * static_cast<float>(r);
+        discount *= gamma;
+        s = sPrime;
+        a = aPrime;
+    }
+
+    return totalReward;
 }
 
-unsigned DPAgent::get_best_action(const std::vector<unsigned>& s) const{
+void DPAgent::reset() {
+    for (const auto& s : all_states) {
+        this->V[state_to_key(s)] = 0.0;
+    }
+}
+
+unsigned DPAgent::getTargetPolicy(std::vector<unsigned> s){
     return this->policy.at(state_to_key(s));
 }
+
+unsigned DPAgent::getBehaviorPolicy(std::vector<unsigned> s, unsigned t) {
+    return getTargetPolicy(s);
+}
+

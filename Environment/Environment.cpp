@@ -3,32 +3,46 @@
 #include <iostream>
 #include <sstream>
 
-Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxThread,
-        const unsigned maxDuration, const unsigned seed) {
+Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned seed) {
     this->_isDebug = false;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
-    this->_numTask = numTask;
     this->_randomizer = std::mt19937(seed);
     this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
+    this->_remainingDurationInQueue = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc + 1;
 
+    this->generateTasks();
     this->reset();
 }
 
-Environment::Environment(const unsigned numProc, const unsigned numTask, const unsigned maxThread,
-        const unsigned maxDuration) {
+Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration) {
     this->_isDebug = false;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
-    this->_numTask = numTask;
     this->_randomizer = std::mt19937(std::random_device()());
     this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
+    this->_remainingDurationInQueue = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc + 1;
 
+    this->generateTasks();
     this->reset();
+}
+
+void Environment::generateTasks() {
+    unsigned remainingLength = this->_maxDuration;
+    const unsigned maxTaskLength = std::max(1u, this->_maxDuration / 4);  // Cap each task's max length
+
+    while (remainingLength > 0) {
+        const unsigned upperBound = std::min(maxTaskLength, remainingLength);
+        auto rand = std::uniform_int_distribution<unsigned>(1, upperBound);
+        unsigned newLength = rand(this->_randomizer);
+        this->_initialTaskQueue.push_back(std::make_shared<Task>(newLength));
+
+        remainingLength -= newLength;
+    }
 }
 
 std::vector<unsigned> Environment::reset() {
@@ -37,16 +51,18 @@ std::vector<unsigned> Environment::reset() {
     this->_processors.clear();
 
     // Add tasks
-    for (int i = 0; i < this->_numTask; ++i) {
-        auto rand = std::uniform_int_distribution<unsigned>(1, this->_maxDuration);
-        this->_taskQueue.push_back(std::make_shared<Task>(rand(this->_randomizer)));
+    this->_remainingDurationInQueue = this->_maxDuration;
+    for (int i = 0; i < this->_initialTaskQueue.size(); ++i) {
+        this->_taskQueue.push_back(std::make_shared<Task>(_initialTaskQueue[i]->getRemainingDuration()));
     }
-    s.push_back(this->_numTask);
+    s.push_back(this->_remainingDurationInQueue);
 
     // Add processors
     for (int i = 0; i < this->_numProc; ++i) {
         this->_processors.push_back(std::make_shared<Processor>(this->_maxThread));
-        s.push_back(0);
+        for (int j = 0; j < this->_maxThread; ++j) {
+            s.push_back(0);
+        }
     }
 
     if (this->_isDebug) {
@@ -82,13 +98,17 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
     reward -= 1;
 
     // Check done
-    nextState.push_back(this->_taskQueue.size());
+    nextState.push_back(this->_remainingDurationInQueue);
     if (!this->_taskQueue.empty()) {
         done = false;
     }
 
     for (const std::shared_ptr<Processor>& proc : this->_processors) {
-        nextState.push_back(proc->getNumBusyThread());
+        auto threadsLength = proc->getThreadsLength();
+        for (unsigned length : threadsLength) {
+            nextState.push_back(length);
+        }
+
         if (proc->getNumBusyThread() != 0) {
             done = false;
         }
@@ -105,7 +125,8 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
     return std::make_tuple(nextState, reward, done);
 }
 
-std::tuple<std::vector<unsigned>, int, bool> Environment::simulateStep(const std::vector<unsigned>& state, unsigned action) {
+std::tuple<std::vector<unsigned>, int, bool> Environment::simulateStep(const std::vector<unsigned>& state, const unsigned action) const {
+    /*
     // Action out of bound guard
     if (action >= this->_numAction) {
         std::stringstream es;
@@ -119,18 +140,24 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::simulateStep(const std
     bool done = true;
 
     // Pseudo-Processors for simulation
-    unsigned num_proc = this->getNumProc();
-    unsigned max_threads = this->getMaxThread();
+    const unsigned num_proc = this->getNumProc();
+    const unsigned max_threads = this->getMaxThread();
     unsigned num_tasks = state[0];  // task queue size
-    std::vector<unsigned> proc_threads(state.begin() + 1, state.end()); // from s[1] to s[4]
 
-    // Simulate tick: decrese one thread per processor
-    for (unsigned& threads : proc_threads) {
-        // proc->tick();
-        if (threads > 0) {
-            threads -= 1;
+    // Simulate tick
+
+    for (unsigned proc = 0; proc < num_proc; ++proc) {
+        std::vector proc_queue(state.begin() + 1 + max_threads * proc, state.begin() + max_threads + max_threads * proc);
+        bool actionExecuted = false;
+        for (const unsigned& length : proc_queue) {
+            if (num_tasks > 0 && action == proc && !actionExecuted && length - 1 != 0) {
+                nextState.push_back(std::max(static_cast<int>(length) - 1, 0));
+            }
+            nextState.push_back(std::max(static_cast<int>(length) - 1, 0));
         }
     }
+
+    nextState.insert(nextState.begin(), std::max(static_cast<int>(num_tasks) - 1, 0));
 
     // Perform action
     if (action < num_proc && num_tasks > 0 && proc_threads[action] < max_threads) {
@@ -144,7 +171,7 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::simulateStep(const std
     for (unsigned i = 0; i < num_proc; ++i) {
         float utilization = static_cast<float>(proc_threads[i]) / max_threads;
         if (num_tasks > 0 && utilization < 0.2f) {
-            reward -= 10;
+            reward -= 1;
         }
     }
 
@@ -157,23 +184,19 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::simulateStep(const std
         }
     }
 
-    if (this->_isDebug) {
-        std::cout <<  "haven't implement this yet uhhhhh ohhh" << std::endl;
-    }
-
-
     nextState.push_back(num_tasks);
     nextState.insert(nextState.end(), proc_threads.begin(), proc_threads.end());
 
+    return std::make_tuple(nextState, reward, done);
+    */
+    std::vector<unsigned> nextState;
+    int reward = 0;
+    bool done = true;
     return std::make_tuple(nextState, reward, done);
 }
 
 unsigned Environment::getNumAction() const {
     return this->_numAction;
-}
-
-unsigned Environment::getNumTask() const {
-    return this->_numTask;
 }
 
 unsigned Environment::getMaxThread() const {
@@ -182,6 +205,10 @@ unsigned Environment::getMaxThread() const {
 
 unsigned Environment::getNumProc() const {
     return this->_numProc;
+}
+
+unsigned Environment::getMaxDuration() const {
+    return this->_maxDuration;
 }
 
 std::string Environment::toString() const {
@@ -212,10 +239,12 @@ void Environment::_moveFromQueue(const unsigned toProc) {
     }
 
     const std::shared_ptr<Task> t = this->_taskQueue.front();
+    this->_remainingDurationInQueue -= t->getRemainingDuration();
     this->_taskQueue.pop_front();
 
     // Processor is at max cap, re-queued back to the task queue
     if (!this->_processors.at(toProc)->queue(t)) {
         this->_taskQueue.push_front(t);
+        this->_remainingDurationInQueue += t->getRemainingDuration();
     }
 }

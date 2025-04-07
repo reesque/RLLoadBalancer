@@ -4,27 +4,37 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+
+#include "BaseAgent.h"
 #include "../Environment/Environment.h"
 
-class DPAgent {
+class DPAgent : public BaseAgent {
 public:
-    DPAgent(const std::shared_ptr<Environment> &environment, double gamma, double theta);
-    double get_value(const std::vector<unsigned>& s) const;
-    unsigned get_best_action(const std::vector<unsigned>& s) const;
-    void run_value_iteration();
+    DPAgent(const std::shared_ptr<Environment> &environment, float gamma, float theta);
+    void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime, bool done) override;
+    unsigned getTargetPolicy(std::vector<unsigned> s) override;
+    unsigned getBehaviorPolicy(std::vector<unsigned> s, unsigned t) override;
+
+    /**
+     * Convert input state matrix to V-table string key
+     */
+    void runValueIteration();
+    float rollout();
+    void reset();
 private:
     std::shared_ptr<Environment> environment;
-    double gamma;
-    double theta; // convergence threshold
+    float gamma;
+    float theta; // convergence threshold
 
     // key = stringified state, value = V(s)
-    std::unordered_map<std::string, double> V;
+    std::unordered_map<std::string, float> V;
 
     // key = stringified state, value = best action
     std::unordered_map<std::string, unsigned> policy;
 
     unsigned argmax(std::vector<float> v);
     std::string state_to_key(const std::vector<unsigned>& s) const;
+    std::vector<std::vector<unsigned>> all_states;
 };
     
 #endif // DPAGENT_H
