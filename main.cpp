@@ -6,33 +6,26 @@
 
 int main() {
     const unsigned seed = 123;
-    const unsigned numProc = 4;
-    const unsigned numThread = 4;
-    const unsigned numTask = 40;
-    const unsigned maxTaskDuration = 10;
+    const unsigned numProc = 2;
+    const unsigned numThread = 2;
+    const unsigned maxTaskDuration = 20;
 
     const float epsilonMin = 0.1;
     const float epsilonMax = 1.0;
     const float epsilonDecayRate = 0.001;
 
     const float alpha = 0.5;
-    const float gamma = 1.0;
+    const float gamma = 1;
 
-    const float theta = 0.01;
-
-    const unsigned numRun = 10;
-    const unsigned numEpisode = 100000;
+    const unsigned numRun = 4;
+    const unsigned numEpisode = 500000;
 
     // Data for plotting
     std::vector<std::vector<int>> rewards;
 
     // Running the train and rollout
-    const auto env = std::make_shared<Environment>(numProc, numTask, numThread, maxTaskDuration, seed);
+    const auto env = std::make_shared<Environment>(numProc, numThread, maxTaskDuration, seed);
     const auto ds = std::make_shared<LinearDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
-
-    // Run DP
-    auto dp = DPAgent(env, gamma, theta);
-    dp.run_value_iteration();
 
     // Run Q Learning
     std::unique_ptr<QLAgent> agent;
@@ -43,6 +36,6 @@ int main() {
 
     agent->rollout();
 
-    Plot::AverageRewardsOverEpisodes(rewards);
+    Plot::ExportAverageRewardsOverEpisodes(rewards, 0.0);
     return 0;
 }

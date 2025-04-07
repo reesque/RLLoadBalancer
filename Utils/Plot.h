@@ -8,7 +8,7 @@ public:
     Plot(const Plot&) = delete;
     Plot& operator = (const Plot&) = delete;
 
-    static void AverageRewardsOverEpisodes(const std::vector<std::vector<int>>& data);
+    static void ExportAverageRewardsOverEpisodes(const std::vector<std::vector<int>>& data, float baseline);
 };
 
 #endif //PLOT_H

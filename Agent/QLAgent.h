@@ -12,7 +12,7 @@ public:
     QLAgent(const std::shared_ptr<Environment> &env, float alpha, float gamma, const std::shared_ptr<DecayScheduler> &decayScheduler, unsigned seed);
     unsigned getBehaviorPolicy(std::vector<unsigned> s, unsigned t) override;
     unsigned getTargetPolicy(std::vector<unsigned> s) override;
-    void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime) override;
+    void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime, bool done) override;
     std::vector<int> train(unsigned numEpisode);
     void rollout();
 private:
