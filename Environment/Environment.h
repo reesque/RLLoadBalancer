@@ -15,7 +15,6 @@ public:
     explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned seed);
     std::vector<unsigned> reset();
     std::tuple<std::vector<unsigned>, int, bool> step(unsigned action);
-    std::tuple<std::vector<unsigned>, int, bool> simulateStep(const std::vector<unsigned>& state, unsigned action) const;
     std::string toString() const;
     unsigned getNumAction() const;
     unsigned getNumProc() const;

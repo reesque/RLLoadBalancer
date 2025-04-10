@@ -1,10 +1,9 @@
 #include "Plot.h"
 
-#include <matplot/matplot.h>
-#include <torch/torch.h>
+#include <fstream>
 
-void Plot::ExportAverageRewardsOverEpisodes(const std::vector<std::vector<int>>& data, float baseline) {
-    std::ofstream outFile("../data.csv");
+void Plot::ExportAverageRewardsOverEpisodes(const std::vector<std::vector<int>>& data, const std::string& filename) {
+    std::ofstream outFile("../" + filename + ".csv");
 
     for (const auto& row : data) {
         for (size_t i = 0; i < row.size(); ++i) {

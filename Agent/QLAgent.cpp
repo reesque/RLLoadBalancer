@@ -11,11 +11,11 @@ QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, con
     this->_decayScheduler = decayScheduler;
     this->_randomizer = std::mt19937(std::random_device()());
 
-    std::vector<int64_t> qShape = {env->getMaxDuration() + 1};
+    std::vector<int64_t> qShape = {env->getMaxDuration() / 4 + 1};
 
     for (int proc = 0; proc < env->getNumProc(); ++proc) {
         for (int thread = 0; thread < env->getMaxThread(); ++thread) {
-            qShape.push_back(env->getMaxDuration() + 1);
+            qShape.push_back(env->getMaxDuration() / 4 + 1);
         }
     }
  
@@ -32,7 +32,7 @@ QLAgent::QLAgent(const std::shared_ptr<Environment> &env, const float alpha, con
     this->_decayScheduler = decayScheduler;
     this->_randomizer = std::mt19937(seed);
 
-    std::vector<int64_t> qShape = {env->getMaxDuration() + 1};
+    std::vector<int64_t> qShape = {env->getMaxDuration() / 4 + 1};
 
     for (int proc = 0; proc < env->getNumProc(); ++proc) {
         for (int thread = 0; thread < env->getMaxThread(); ++thread) {
@@ -73,7 +73,7 @@ void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const int 
 std::vector<int> QLAgent::train(const unsigned numEpisode) {
     this->_env->setDebug(false);
     std::vector<int> rewards = {};
-    auto pb = ProgressBar("Training", numEpisode, [this, &rewards](const unsigned it) {
+    auto pb = ProgressBar("Training QL", numEpisode, [this, &rewards](const unsigned it) {
         std::vector<unsigned> s = this->_env->reset();
         bool done = false;
         unsigned a = getBehaviorPolicy(s, it);
@@ -97,7 +97,7 @@ std::vector<int> QLAgent::train(const unsigned numEpisode) {
     return rewards;
 }
 
-void QLAgent::rollout() {
+unsigned QLAgent::rollout() {
     std::vector<unsigned> s = this->_env->reset();
     this->_env->setDebug(true);
     bool done = false;
@@ -113,7 +113,8 @@ void QLAgent::rollout() {
         a = aPrime;
         ++t;
     }
-    std::cout << "Took " << t << " time steps to finish!" << std::endl;
+
+    return t;
 }
 
 unsigned QLAgent::_argmax(const torch::Tensor& v) {

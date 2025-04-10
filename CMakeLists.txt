@@ -18,8 +18,6 @@ add_executable(RLLoadBalancer main.cpp
         Agent/BaseAgent.h
         Agent/QLAgent.cpp
         Agent/QLAgent.h
-        Agent/DPAgent.cpp
-        Agent/DPAgent.h
         Utils/ProgressBar.cpp
         Utils/ProgressBar.h
         DecayScheduler/DecayScheduler.h
@@ -28,5 +26,7 @@ add_executable(RLLoadBalancer main.cpp
         DecayScheduler/DecayScheduler.cpp
         Utils/Plot.cpp
         Utils/Plot.h
+        Agent/RandomAgent.cpp
+        Agent/RandomAgent.h
 )
 target_link_libraries(RLLoadBalancer "${TORCH_LIBRARIES}" Matplot++::matplot)
