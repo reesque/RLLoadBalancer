@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned seed) {
+Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned numTask, const unsigned seed) {
     this->_isDebug = false;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
     this->_randomizer = std::mt19937(seed);
@@ -11,12 +11,13 @@ Environment::Environment(const unsigned numProc, const unsigned maxThread, const
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc;
+    this->_numTask = numTask;
 
     this->generateTasks();
     this->reset();
 }
 
-Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration) {
+Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned numTask) {
     this->_isDebug = false;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
     this->_randomizer = std::mt19937(std::random_device()());
@@ -24,6 +25,7 @@ Environment::Environment(const unsigned numProc, const unsigned maxThread, const
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
     this->_numAction = numProc;
+    this->_numTask = numTask;
 
     this->generateTasks();
     this->reset();
@@ -31,7 +33,7 @@ Environment::Environment(const unsigned numProc, const unsigned maxThread, const
 
 void Environment::generateTasks() {
     unsigned remainingLength = this->_maxDuration;
-    const unsigned maxTaskLength = std::max(1u, this->_maxDuration / 4);  // Cap each task's max length
+    const unsigned maxTaskLength = std::max(1u, this->_maxDuration / this->_numTask);
 
     while (remainingLength > 0) {
         const unsigned upperBound = std::min(maxTaskLength, remainingLength);

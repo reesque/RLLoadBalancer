@@ -8,11 +8,10 @@
 
 class Environment {
 public:
-    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration);
+    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned numTask);
+    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned numTask, unsigned seed);
 
     void generateTasks();
-
-    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned seed);
     std::vector<unsigned> reset();
     std::tuple<std::vector<unsigned>, int, bool> step(unsigned action);
     std::string toString() const;
@@ -26,7 +25,7 @@ private:
     unsigned _numAction;
     unsigned _maxThread;
     unsigned _maxDuration;
-    unsigned _remainingDurationInQueue;
+    unsigned _numTask;
     std::mt19937 _randomizer;
     bool _isDebug;
     std::deque<std::shared_ptr<Task>> _taskQueue;

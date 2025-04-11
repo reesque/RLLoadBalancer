@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "Agent/QLAgent.h"
 #include "Agent/RandomAgent.h"
 #include "DecayScheduler/LinearDecayScheduler.h"
@@ -9,8 +11,9 @@
 int main() {
     const unsigned seed = 123;
     const unsigned numProc = 2;
-    const unsigned numThread = 3;
-    const unsigned maxTaskDuration = 50;
+    const unsigned numThread = 2;
+    const unsigned numTask = 20;
+    const unsigned maxTaskDuration = 100;
 
     const float epsilonMin = 0.1;
     const float epsilonMax = 1.0;
@@ -28,7 +31,7 @@ int main() {
     double randSteps = 0.0;
 
     // Running the train and rollout
-    const auto env = std::make_shared<Environment>(numProc, numThread, maxTaskDuration, seed);
+    const auto env = std::make_shared<Environment>(numProc, numThread, maxTaskDuration, numTask, seed);
     const auto ds = std::make_shared<LinearDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
 
     // Run Random
@@ -54,6 +57,7 @@ int main() {
 
     const unsigned qlSteps = dlAgent->rollout();
 
+    // Result
     std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
     std::cout << "Q Learning Policy: " << qlSteps << " steps" << std::endl;
 
