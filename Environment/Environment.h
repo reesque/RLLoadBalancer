@@ -19,6 +19,7 @@ public:
     unsigned getNumProc() const;
     unsigned getMaxThread() const;
     unsigned getMaxDuration() const;
+    float getUtilizationScore() const;
     void setDebug(bool isDebug);
 private:
     unsigned _numProc;
