@@ -1,7 +1,7 @@
 #include "ExponentialDecayScheduler.h"
 
-// #include <ATen/ops/amax.h>
 #include <algorithm>
+#include <cmath>
 
 ExponentialDecayScheduler::ExponentialDecayScheduler(const float min, const float max, const float rate)
     : DecayScheduler(min, max, rate) {}

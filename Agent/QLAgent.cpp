@@ -45,14 +45,17 @@ void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const int 
     this->_q[this->_stateToKey(s)][a] += this->_alpha * (static_cast<float>(r) + this->_gamma * nextQ - currentQ);
 }
 
-std::vector<int> QLAgent::train(const unsigned numEpisode) {
+std::tuple<std::vector<int>, float> QLAgent::train(const unsigned numEpisode) {
     this->_env->setDebug(false);
     std::vector<int> rewards = {};
-    auto pb = ProgressBar("Training QL", numEpisode, [this, &rewards](const unsigned it) {
+    float uScore = 0.0;
+    auto pb = ProgressBar("Training QL", numEpisode, [this, &rewards, &uScore](const unsigned it) {
         std::vector<unsigned> s = this->_env->reset();
+        float uScoreEp = 0.0;
         bool done = false;
         unsigned a = getBehaviorPolicy(s, it);
         int episodeRewards = 0;
+        unsigned t = 0;
         while (!done) {
             int r = 0;
             std::vector<unsigned> sPrime;
@@ -61,15 +64,18 @@ std::vector<int> QLAgent::train(const unsigned numEpisode) {
 
             this->update(s, a, r, sPrime, done);
 
+            t += 1;
+            uScoreEp += this->_env->getUtilizationScore();
             episodeRewards += r;
             s = sPrime;
             a = aPrime;
         }
 
+        uScore += uScoreEp / static_cast<float>(t);
         rewards.push_back(episodeRewards);
     });
 
-    return rewards;
+    return std::make_tuple(rewards, uScore / static_cast<float>(numEpisode));
 }
 
 unsigned QLAgent::rollout() {

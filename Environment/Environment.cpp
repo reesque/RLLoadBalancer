@@ -32,16 +32,10 @@ Environment::Environment(const unsigned numProc, const unsigned maxThread, const
 }
 
 void Environment::generateTasks() {
-    unsigned remainingLength = this->_maxDuration;
-    const unsigned maxTaskLength = std::max(1u, this->_maxDuration / this->_numTask);
-
-    while (remainingLength > 0) {
-        const unsigned upperBound = std::min(maxTaskLength, remainingLength);
-        auto rand = std::uniform_int_distribution<unsigned>(1, upperBound);
+    for (unsigned i = 0; i < this->_numTask; i++) {
+        auto rand = std::uniform_int_distribution<unsigned>(1, this->_maxDuration);
         unsigned newLength = rand(this->_randomizer);
         this->_initialTaskQueue.push_back(std::make_shared<Task>(newLength));
-
-        remainingLength -= newLength;
     }
 }
 
@@ -138,6 +132,27 @@ unsigned Environment::getNumProc() const {
 unsigned Environment::getMaxDuration() const {
     return this->_maxDuration;
 }
+
+float Environment::getUtilizationScore() const {
+    float mean = 0;
+    for (const auto & _processor : this->_processors) {
+        mean += _processor->getUtilization();
+    }
+
+    mean /= static_cast<float>(this->getNumProc());
+
+    float variance = 0.0;
+    for (const auto & _processor : this->_processors) {
+        variance += (_processor->getUtilization() - mean) * (_processor->getUtilization() - mean);
+    }
+    variance /= static_cast<float>(this->getNumProc());
+    const float stddev = std::sqrt(variance);
+
+    const float score = 1.0f - (stddev / mean);
+
+    return std::max(0.0f, score);
+}
+
 
 std::string Environment::toString() const {
     std::stringstream result;

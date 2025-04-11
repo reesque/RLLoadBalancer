@@ -14,7 +14,7 @@ public:
     unsigned getBehaviorPolicy(std::vector<unsigned> s, unsigned t) override;
     unsigned getTargetPolicy(std::vector<unsigned> s) override;
     void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime, bool done) override;
-    std::vector<int> train(unsigned numEpisode);
+    std::tuple<std::vector<int>, float> train(unsigned numEpisode);
     unsigned rollout();
 private:
     std::shared_ptr<Environment> _env;

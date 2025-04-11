@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.25.1)
 project(RLLoadBalancer)
 
 find_package(Torch REQUIRED)
-find_package(Matplot++ REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
@@ -20,8 +19,6 @@ add_executable(RLLoadBalancer main.cpp
         Agent/DQNAgent.cpp
         Agent/QLAgent.cpp
         Agent/QLAgent.h
-        # Agent/DPAgent.cpp
-        # Agent/DPAgent.h
         Agent/FFN.cpp
         Agent/FFN.h
         Agent/ReplayBuffer.cpp
@@ -39,7 +36,7 @@ add_executable(RLLoadBalancer main.cpp
         Agent/RandomAgent.cpp
         Agent/RandomAgent.h
 )
-target_link_libraries(RLLoadBalancer "${TORCH_LIBRARIES}" Matplot++::matplot)
+target_link_libraries(RLLoadBalancer "${TORCH_LIBRARIES}")
 
 # add_executable(test_replay_buffer test_replay_buffer.cpp
 #         Agent/ReplayBuffer.cpp
