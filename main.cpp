@@ -67,13 +67,6 @@ int main() {
     const unsigned qlSteps = dlAgent->rollout();
     qlUtilScore = qlUtilScore / numRun;
 
-    // Result
-    std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
-    std::cout << "Q Learning Policy: " << qlSteps << " steps | " << qlUtilScore << " Avg Utilization" << std::endl;
-
-    Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
-    Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
-
     /**
      * Run Deep Q-net. Variables for DQN agent
      */
@@ -86,7 +79,7 @@ int main() {
 
     int state_size = env->reset().size();
     int action_size = env->getNumAction();
-    std::vector<int> hidden_layers = {64, 64}; // You can change this
+    std::vector hidden_layers = {64, 64}; // You can change this
 
     
     // Create and train DQN agent
@@ -101,8 +94,14 @@ int main() {
     }    
     const unsigned dqnSteps = dqnAagent->rollout();
 
-    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
+    // Result
+    std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
+    std::cout << "Q Learning Policy: " << qlSteps << " steps | " << qlUtilScore << " Avg Utilization" << std::endl;
     std::cout << "Deep Q Network Policy: " << dqnSteps << " steps" << std::endl;
+
+    Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
+    Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
+    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
 
     return 0;
 }
