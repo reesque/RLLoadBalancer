@@ -36,4 +36,4 @@ def plot_curve(arr_list, legend_list, color_list, ylabel):
     ax.legend(handles=h_list)
     plt.show()
 
-plot_curve([np.array(data)], ["Q Learning"], ["Red"], "Rewards")
+plot_curve([np.array(data)], ["Deep Q-Network"], ["Red"], "Rewards")

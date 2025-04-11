@@ -69,7 +69,7 @@ int main() {
 
     int state_size = env->reset().size();
     int action_size = env->getNumAction();
-    std::vector<int> hidden_layers = {128, 128, 64}; // You can change this
+    std::vector<int> hidden_layers = {64, 64}; // You can change this
 
     
     // // Create and train DQN agent

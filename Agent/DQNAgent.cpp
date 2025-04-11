@@ -67,8 +67,7 @@ unsigned DQNAgent::getTargetPolicy(std::vector<unsigned> s) {
     return _argmax(qs);
 }
 
-void DQNAgent::update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime) {
-    bool done = sPrime.empty();
+void DQNAgent::update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime, bool done) {
     _replay_buffer->add(s, a, static_cast<float>(r), sPrime, done);
 
     // Perform batch sampling and update Q-net
@@ -97,7 +96,7 @@ std::vector<int> DQNAgent::train(unsigned numEpisode) {
             std::vector<unsigned> sPrime;
             std::tie(sPrime, r, done) = this->_env->step(a);
 
-            this->update(s, a, r, sPrime); // ++_steps_done is done here
+            this->update(s, a, r, sPrime, done); // ++_steps_done is done here
 
             episodeRewards += r;
             s = sPrime;
