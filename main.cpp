@@ -2,7 +2,9 @@
 
 #include "Agent/QLAgent.h"
 #include "Agent/RandomAgent.h"
+#include "Agent/DQNAgent.h"
 #include "DecayScheduler/LinearDecayScheduler.h"
+#include "DecayScheduler/ExponentialDecayScheduler.h"
 #include "Environment/Environment.h"
 #include "Utils/Plot.h"
 
@@ -63,5 +65,36 @@ int main() {
 
     Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
     Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
+
+    /**
+     * Run Deep Q-net. Variables for DQN agent
+     */
+    const auto ds_expo = std::make_shared<ExponentialDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
+    const float learning_rate = 1e-3f;
+    int target_update_freq = 1000;
+    size_t replay_capacity = 10000;
+    float prepopulate_steps = 2500;
+    size_t batch_size = 64;
+
+    int state_size = env->reset().size();
+    int action_size = env->getNumAction();
+    std::vector<int> hidden_layers = {64, 64}; // You can change this
+
+    
+    // Create and train DQN agent
+    std::vector<std::vector<int>> dqnRewards;
+
+    std::unique_ptr<DQNAgent> dqnAagent;
+    for (unsigned i = 0; i < numRun; i++) {
+        dqnAagent = std::make_unique<DQNAgent>(env, state_size, action_size, hidden_layers, gamma, learning_rate,
+            ds_expo, target_update_freq, replay_capacity,
+            prepopulate_steps, batch_size);
+        dqnRewards.push_back(dqnAagent->train(numEpisode));
+    }    
+    const unsigned dqnSteps = dqnAagent->rollout();
+
+    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
+    std::cout << "Deep Q Network Policy: " << dqnSteps << " steps" << std::endl;
+
     return 0;
 }
