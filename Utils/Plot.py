@@ -36,4 +36,11 @@ def plot_curve(arr_list, legend_list, color_list, ylabel):
     ax.legend(handles=h_list)
     plt.show()
 
-plot_curve([np.array(data)], ["Q Learning"], ["Red"], "Rewards")
+label = "Q-Learn"
+if file == "rand":
+    label = "Random Policy"
+elif file == "dqn":
+    label = "Deep Q-Network"
+else:
+    raise NotImplementedError
+plot_curve([np.array(data)], [label], ["Red"], "Rewards")
