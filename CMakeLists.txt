@@ -20,8 +20,8 @@ add_executable(RLLoadBalancer main.cpp
         Agent/DQNAgent.cpp
         Agent/QLAgent.cpp
         Agent/QLAgent.h
-        Agent/DPAgent.cpp
-        Agent/DPAgent.h
+        # Agent/DPAgent.cpp
+        # Agent/DPAgent.h
         Agent/FFN.cpp
         Agent/FFN.h
         Agent/ReplayBuffer.cpp

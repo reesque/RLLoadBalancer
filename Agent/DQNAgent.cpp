@@ -108,7 +108,7 @@ std::vector<int> DQNAgent::train(unsigned numEpisode) {
     return rewards;
 }
 
-void DQNAgent::rollout() {
+unsigned DQNAgent::rollout() {
     int total_reward = 0;
     std::vector<unsigned> s = this->_env->reset();
     this->_env->setDebug(true);
@@ -125,7 +125,8 @@ void DQNAgent::rollout() {
         ++t;
         total_reward += r;
     }
-    std::cout << "[Rollout] Took " << t << " time steps to finish!\nTotal Reward: " << total_reward << std::endl;
+    // std::cout << "[Rollout] Took " << t << " time steps to finish!\nTotal Reward: " << total_reward << std::endl;
+    return t;
 }
 
 unsigned DQNAgent::_argmax(const torch::Tensor& v) {

@@ -2,6 +2,7 @@
 
 #include "Agent/QLAgent.h"
 #include "Agent/RandomAgent.h"
+#include "Agent/DQNAgent.h"
 #include "DecayScheduler/LinearDecayScheduler.h"
 #include "DecayScheduler/ExponentialDecayScheduler.h"
 #include "Environment/Environment.h"
@@ -50,15 +51,23 @@ int main() {
     randSteps = std::floor(randSteps);
 
     // Run Q Learning
-    std::unique_ptr<QLAgent> agent;
+    std::unique_ptr<QLAgent> dlAgent;
     for (unsigned i = 0; i < numRun; i++) {
-        agent = std::make_unique<QLAgent>(env, alpha, gamma, ds, seed);
-        rewards.push_back(agent->train(numEpisode));
+        dlAgent = std::make_unique<QLAgent>(env, alpha, gamma, ds, seed);
+        qlRewards.push_back(dlAgent->train(numEpisode));
     }
-    */
-    // Run Deep Q-net
+
+    const unsigned qlSteps = dlAgent->rollout();
+
+    // Result
+    std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
+    std::cout << "Q Learning Policy: " << qlSteps << " steps" << std::endl;
+
+    Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
+    Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
+
     /**
-     * Variables for DQN agent
+     * Run Deep Q-net. Variables for DQN agent
      */
     const auto ds_expo = std::make_shared<ExponentialDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
     const float learning_rate = 1e-3f;
@@ -72,22 +81,20 @@ int main() {
     std::vector<int> hidden_layers = {64, 64}; // You can change this
 
     
-    // // Create and train DQN agent
-    std::unique_ptr<DQNAgent> agent;
+    // Create and train DQN agent
+    std::vector<std::vector<int>> dqnRewards;
+
+    std::unique_ptr<DQNAgent> dqnAagent;
     for (unsigned i = 0; i < numRun; i++) {
-        agent = std::make_unique<DQNAgent>(env, state_size, action_size, hidden_layers, gamma, learning_rate,
+        dqnAagent = std::make_unique<DQNAgent>(env, state_size, action_size, hidden_layers, gamma, learning_rate,
             ds_expo, target_update_freq, replay_capacity,
             prepopulate_steps, batch_size);
-        rewards.push_back(agent->train(numEpisode));
-    }
+        dqnRewards.push_back(dqnAagent->train(numEpisode));
+    }    
+    const unsigned dqnSteps = dqnAagent->rollout();
 
-    const unsigned qlSteps = dlAgent->rollout();
+    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
+    std::cout << "Deep Q Network Policy: " << dqnSteps << " steps" << std::endl;
 
-    // Result
-    std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
-    std::cout << "Q Learning Policy: " << qlSteps << " steps" << std::endl;
-
-    Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
-    Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
     return 0;
 }
