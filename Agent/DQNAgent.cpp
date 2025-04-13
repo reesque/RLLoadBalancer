@@ -14,24 +14,24 @@ DQNAgent::DQNAgent(
     int state_size, 
     int action_size, 
     const std::vector<int>& hidden_layers,
-    float gamma, float lr,
+    const float gamma, const float lr,
     const std::shared_ptr<DecayScheduler> &decayScheduler,
-    int target_update_freq, // 10K
+    const int target_update_freq, // 10K
     size_t replay_size,
-    float replay_prepopulate_steps,
-    size_t batch_size
+    const float replay_prepopulate_steps,
+    const size_t batch_size
 ) 
     : _env(env), 
     _decay_scheduler(decayScheduler), 
+    _q_net(FFN(state_size, action_size, hidden_layers)),
+    _target_net(FFN(state_size, action_size, hidden_layers)),
+    _optimizer(_q_net->parameters(), lr),
+    _randomizer(std::random_device{}()),
     _state_size(state_size),
     _action_size(action_size),
     _gamma(gamma),
     _target_update_freq(target_update_freq),
-    _batch_size(batch_size),
-    _q_net(FFN(state_size, action_size, hidden_layers)),
-    _target_net(FFN(state_size, action_size, hidden_layers)),
-    _optimizer(_q_net->parameters(), lr),
-    _randomizer(std::random_device{}())
+    _batch_size(batch_size)
     {
         // All the more complex private properties
         // init 2 networks - Q and target net and make sure they have the same weights
@@ -45,10 +45,10 @@ DQNAgent::DQNAgent(
 
 unsigned DQNAgent::getBehaviorPolicy(const std::vector<unsigned> s, const unsigned t) {
     std::uniform_real_distribution<float> randChance(0.0f, 1.0f);
-    float epsilon = this->_decay_scheduler->getValue(t);
+    const float epsilon = this->_decay_scheduler->getValue(t);
 
     float chance = randChance(this->_randomizer);
-    if (chance < this->_decay_scheduler->getValue(t)) {
+    if (chance < epsilon) {
         std::uniform_int_distribution<unsigned> randAllAction(0, this->_env->getNumAction() - 1);
         return randAllAction(this->_randomizer);
     }
@@ -67,7 +67,7 @@ unsigned DQNAgent::getTargetPolicy(std::vector<unsigned> s) {
     return _argmax(qs);
 }
 
-void DQNAgent::update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime, bool done) {
+void DQNAgent::update(std::vector<unsigned> s, const unsigned a, const float r, const std::vector<unsigned> sPrime, const bool done) {
     _replay_buffer->add(s, a, static_cast<float>(r), sPrime, done);
 
     // Perform batch sampling and update Q-net
@@ -80,18 +80,19 @@ void DQNAgent::update(std::vector<unsigned> s, unsigned a, int r, std::vector<un
 }
 
 
-std::vector<int> DQNAgent::train(unsigned numEpisode) {
+std::vector<float> DQNAgent::train(const unsigned numEpisode) {
     this->_env->setDebug(false);
-    std::vector<int> rewards;
+    std::vector<float> rewards;
+    float uScore = 0.0;
     
-    auto pb = ProgressBar("Training", numEpisode, [this, &rewards](const unsigned episode) {
+    auto pb = ProgressBar("Training", numEpisode, [this, &rewards, &uScore](const unsigned episode) {
         std::vector<unsigned> s = this->_env->reset();
         bool done = false;
         
         int episodeRewards = 0;
 
         while (!done) {
-            unsigned a = getBehaviorPolicy(s, _steps_done);
+            const unsigned a = getBehaviorPolicy(s, _steps_done);
             int r;
             std::vector<unsigned> sPrime;
             std::tie(sPrime, r, done) = this->_env->step(a);
@@ -144,18 +145,6 @@ unsigned DQNAgent::_argmax(const torch::Tensor& v) {
     return maxIndices[dist(this->_randomizer)];
 }
 
-/**
- * @brief Performs one training step of the DQN using a minibatch from the replay buffer.
- *
- * This method implements the core learning algorithm of DQN:
- * - Samples a minibatch of transitions from the replay buffer.
- * - Computes Q(s, a) from the current Q-network.
- * - Computes target Q-values using the target network and the Bellman equation.
- * - Calculates the mean squared error (MSE) loss.
- * - Performs a gradient descent step to minimize the loss.
- *
- * If there are not enough samples in the replay buffer, this function exits early.
- */
 void DQNAgent::_trainStep() {
     // Not enough samples to train...yet
     if (_replay_buffer->get_size() < _batch_size) {
@@ -208,9 +197,6 @@ void DQNAgent::_trainStep() {
     // #TODO losses.append(loss)
 }
 
-/**
- * Updates the target network by copying weights from the Q-network.
- */
 void DQNAgent::_updateTargetNetwork() {
     copy_weights(_q_net, _target_net);
 }

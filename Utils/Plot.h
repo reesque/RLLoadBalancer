@@ -9,7 +9,7 @@ public:
     Plot(const Plot&) = delete;
     Plot& operator = (const Plot&) = delete;
 
-    static void ExportAverageRewardsOverEpisodes(const std::vector<std::vector<int>>& data, const std::string& filename);
+    static void ExportAverageRewardsOverEpisodes(const std::vector<std::vector<float>>& data, const std::string& filename);
 };
 
 #endif //PLOT_H

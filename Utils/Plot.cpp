@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-void Plot::ExportAverageRewardsOverEpisodes(const std::vector<std::vector<int>>& data, const std::string& filename) {
+void Plot::ExportAverageRewardsOverEpisodes(const std::vector<std::vector<float>>& data, const std::string& filename) {
     std::ofstream outFile("../" + filename + ".csv");
 
     for (const auto& row : data) {

@@ -36,8 +36,9 @@ def plot_curve(arr_list, legend_list, color_list, ylabel):
     ax.legend(handles=h_list)
     plt.show()
 
-label = "Q-Learn"
-if file == "rand":
+if file == "ql":
+    label = "Q-Learn"
+elif file == "rand":
     label = "Random Policy"
 elif file == "dqn":
     label = "Deep Q-Network"

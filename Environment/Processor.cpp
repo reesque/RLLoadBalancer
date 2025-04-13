@@ -19,6 +19,8 @@ bool Processor::queue(const std::shared_ptr<Task> &task) {
 }
 
 void Processor::tick() {
+    this->_busyThreads += static_cast<unsigned>(this->_tasks.size());
+
     unsigned taskToTick = this->getNumBusyThread();
     for (unsigned i = 0; i < taskToTick; i++) {
         // Reduce task's duration. If duration is 0 then task is considered done, remove
@@ -59,5 +61,9 @@ std::vector<unsigned> Processor::getThreadsLength() const {
     }
 
     return result;
+}
+
+unsigned Processor::getTotalBusyThreads() const {
+    return this->_busyThreads;
 }
 

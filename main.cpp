@@ -14,30 +14,31 @@ int main() {
     const unsigned seed = 123;
     const unsigned numProc = 4;
     const unsigned numThread = 2;
-    const unsigned numTask = 20;
-    const unsigned maxTaskDuration = 10;
+    const unsigned numTask = 10;
+    const unsigned maxTaskDuration = 20;
 
     const float epsilonMin = 0.1;
     const float epsilonMax = 1.0;
-    const float epsilonDecayRate = 0.001;
+    const float epsilonDecayRate = 0.0001;
 
     const float alpha = 0.5;
     const float gamma = 0.9;
+    const float lambda = 0.1;
 
-    const unsigned numRun = 4;
+    const unsigned numRun = 1;
     const unsigned numEpisode = 100000;
 
     // Data for plotting
-    std::vector<std::vector<int>> qlRewards;
-    float qlUtilScore = 0.0;
+    std::vector<std::vector<float>> qlRewards;
 
-    std::vector<std::vector<int>> randRewards;
-    float randSteps = 0.0;
+    //std::vector<std::vector<int>> randRewards;
+    //float randSteps = 0.0;
 
     // Running the train and rollout
-    const auto env = std::make_shared<Environment>(numProc, numThread, maxTaskDuration, numTask, seed);
+    const auto env = std::make_shared<Environment>(numProc, numThread, maxTaskDuration, numTask, lambda, seed);
     const auto ds = std::make_shared<LinearDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
 
+    /*
     // Run Random
     std::unique_ptr<RandomAgent> randAgent;
     for (unsigned i = 0; i < numRun; i++) {
@@ -50,26 +51,22 @@ int main() {
         randSteps += static_cast<float>(runSteps);
     }
 
-    randSteps = std::floor(randSteps / numRun);
+    randSteps = std::floor(randSteps / numRun);*/
 
     // Run Q Learning
     std::unique_ptr<QLAgent> dlAgent;
     for (unsigned i = 0; i < numRun; i++) {
-        std::vector<int> runRewards;
-        float uScore;
         dlAgent = std::make_unique<QLAgent>(env, alpha, gamma, ds, seed);
-
-        std::tie(runRewards, uScore) = dlAgent->train(numEpisode);
-        qlRewards.push_back(runRewards);
-        qlUtilScore += uScore;
+        qlRewards.push_back(dlAgent->train(numEpisode));
     }
 
-    const unsigned qlSteps = dlAgent->rollout();
-    qlUtilScore = qlUtilScore / numRun;
+    auto [qlSteps, qlUScore] = dlAgent->rollout();
 
     /**
      * Run Deep Q-net. Variables for DQN agent
      */
+
+    /*
     const auto ds_expo = std::make_shared<ExponentialDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
     const float learning_rate = 1e-3f;
     int target_update_freq = 1000;
@@ -84,24 +81,33 @@ int main() {
     
     // Create and train DQN agent
     std::vector<std::vector<int>> dqnRewards;
+    float dqnUtilScore = 0.0;
 
     std::unique_ptr<DQNAgent> dqnAagent;
-    for (unsigned i = 0; i < numRun; i++) {
+    for (unsigned i = 0; i < 1; ++i) {
+        std::vector<int> runRewards;
+        float uScore;
         dqnAagent = std::make_unique<DQNAgent>(env, state_size, action_size, hidden_layers, gamma, learning_rate,
             ds_expo, target_update_freq, replay_capacity,
             prepopulate_steps, batch_size);
-        dqnRewards.push_back(dqnAagent->train(numEpisode));
-    }    
-    const unsigned dqnSteps = dqnAagent->rollout();
+
+        std::tie(runRewards, uScore) = dqnAagent->train(numEpisode);
+
+        dqnRewards.push_back(runRewards);
+        dqnUtilScore += uScore;
+    }
+    dqnUtilScore /= numRun;
+
+    const unsigned dqnSteps = dqnAagent->rollout();*/
 
     // Result
-    std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
-    std::cout << "Q Learning Policy: " << qlSteps << " steps | " << qlUtilScore << " Avg Utilization" << std::endl;
-    std::cout << "Deep Q Network Policy: " << dqnSteps << " steps" << std::endl;
+    //std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
+    std::cout << "Q Learning Policy: " << qlSteps << " steps | " << qlUScore << " Avg Utilization" << std::endl;
+    //std::cout << "Deep Q Network Policy: " << dqnSteps << " steps | " << dqnUtilScore << " Avg Utilization" << std::endl;
 
     Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
-    Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
-    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
+    //Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
+    //Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
 
     return 0;
 }

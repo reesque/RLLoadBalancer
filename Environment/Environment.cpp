@@ -3,10 +3,11 @@
 #include <iostream>
 #include <sstream>
 
-Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned numTask, const unsigned seed) {
+Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned numTask, const float lambda, const unsigned seed) {
     this->_isDebug = false;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
     this->_randomizer = std::mt19937(seed);
+    this->_lambda = lambda;
     this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
@@ -17,10 +18,11 @@ Environment::Environment(const unsigned numProc, const unsigned maxThread, const
     this->reset();
 }
 
-Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned numTask) {
+Environment::Environment(const unsigned numProc, const unsigned maxThread, const unsigned maxDuration, const unsigned numTask, const float lambda) {
     this->_isDebug = false;
     this->_processors = std::vector<std::shared_ptr<Processor>>();
     this->_randomizer = std::mt19937(std::random_device()());
+    this->_lambda = lambda;
     this->_maxThread = maxThread;
     this->_maxDuration = maxDuration;
     this->_numProc = numProc;
@@ -95,6 +97,7 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
         nextState.push_back(0);
     }
 
+    float avgUtilization = 0.0;
     for (const std::shared_ptr<Processor>& proc : this->_processors) {
         auto threadsLength = proc->getThreadsLength();
         for (unsigned length : threadsLength) {
@@ -105,9 +108,20 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
             done = false;
         }
 
-        if (!this->_taskQueue.empty() && proc->getUtilization() < 0.2) {
-            reward -= 1;
-        }
+        avgUtilization += proc->getUtilization();
+    }
+
+    // Calculate utilization neg reward
+    avgUtilization /= this->_numProc;
+
+    float variance = 0.0;
+    for (const auto & _processor : this->_processors) {
+        variance += (_processor->getUtilization() - avgUtilization) * (_processor->getUtilization() - avgUtilization);
+    }
+    variance /= static_cast<float>(this->getNumProc());
+
+    if (!this->_taskQueue.empty()) {
+        reward -= this->_lambda * variance;
     }
 
     if (this->_isDebug) {
@@ -133,17 +147,20 @@ unsigned Environment::getMaxDuration() const {
     return this->_maxDuration;
 }
 
-float Environment::getUtilizationScore() const {
+float Environment::getUtilizationScore(const unsigned totalSteps) const {
+    std::vector<float> allProcBusyTime;
     float mean = 0;
     for (const auto & _processor : this->_processors) {
-        mean += _processor->getUtilization();
+        float procBusyTime = _processor->getTotalBusyThreads() / (this->getMaxThread() * totalSteps);
+        allProcBusyTime.push_back(procBusyTime);
+        mean += procBusyTime;
     }
 
     mean /= static_cast<float>(this->getNumProc());
 
     float variance = 0.0;
-    for (const auto & _processor : this->_processors) {
-        variance += (_processor->getUtilization() - mean) * (_processor->getUtilization() - mean);
+    for (const auto & _procBusyTime : allProcBusyTime) {
+        variance += (_procBusyTime - mean) * (_procBusyTime - mean);
     }
     variance /= static_cast<float>(this->getNumProc());
     const float stddev = std::sqrt(variance);

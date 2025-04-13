@@ -30,8 +30,8 @@ public:
     );
     unsigned getBehaviorPolicy(std::vector<unsigned> s, unsigned t) override;
     unsigned getTargetPolicy(std::vector<unsigned> s) override;
-    void update(std::vector<unsigned> s, unsigned a, int r, std::vector<unsigned> sPrime, bool done) override;
-    std::vector<int> train(unsigned numEpisode);
+    void update(std::vector<unsigned> s, unsigned a, float r, std::vector<unsigned> sPrime, bool done) override;
+    std::vector<float> train(unsigned numEpisode);
     unsigned rollout();
 
 private:
@@ -51,7 +51,23 @@ private:
     int _steps_done = 0;
     size_t _batch_size;
 
+    /**
+     * @brief Performs one training step of the DQN using a minibatch from the replay buffer.
+     *
+     * This method implements the core learning algorithm of DQN:
+     * - Samples a minibatch of transitions from the replay buffer.
+     * - Computes Q(s, a) from the current Q-network.
+     * - Computes target Q-values using the target network and the Bellman equation.
+     * - Calculates the mean squared error (MSE) loss.
+     * - Performs a gradient descent step to minimize the loss.
+     *
+     * If there are not enough samples in the replay buffer, this function exits early.
+     */
     void _trainStep(); // helper for learning from replay buffer
+
+    /**
+     * Updates the target network by copying weights from the Q-network.
+     */
     void _updateTargetNetwork(); // helper to update target network
     unsigned _argmax(const torch::Tensor& v);
 };
