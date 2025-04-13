@@ -12,10 +12,12 @@ public:
     unsigned getTotalProcessTime() const;\
     std::vector<unsigned> getThreadsLength() const;
     float getUtilization() const;
+    unsigned getTotalBusyThreads() const;
     unsigned getNumBusyThread() const;
     void tick();
 private:
     std::vector<std::shared_ptr<Task>> _tasks;
+    unsigned _busyThreads;
     unsigned _totalProcessTime = 0;
     unsigned _maxThread;
 };

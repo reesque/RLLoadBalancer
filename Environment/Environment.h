@@ -8,8 +8,8 @@
 
 class Environment {
 public:
-    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned numTask);
-    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned numTask, unsigned seed);
+    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned numTask, float lambda);
+    explicit Environment(unsigned numProc, unsigned maxThread, unsigned maxDuration, unsigned numTask, float lambda, unsigned seed);
 
     void generateTasks();
     std::vector<unsigned> reset();
@@ -19,7 +19,7 @@ public:
     unsigned getNumProc() const;
     unsigned getMaxThread() const;
     unsigned getMaxDuration() const;
-    float getUtilizationScore() const;
+    float getUtilizationScore(unsigned totalSteps) const;
     void setDebug(bool isDebug);
 private:
     unsigned _numProc;
@@ -27,6 +27,7 @@ private:
     unsigned _maxThread;
     unsigned _maxDuration;
     unsigned _numTask;
+    unsigned _lambda;
     std::mt19937 _randomizer;
     bool _isDebug;
     std::deque<std::shared_ptr<Task>> _taskQueue;
@@ -34,6 +35,7 @@ private:
     std::vector<std::shared_ptr<Processor>> _processors;
 
     void _moveFromQueue(unsigned toProc);
+
 };
 
 #endif //ENVIRONMENT_H

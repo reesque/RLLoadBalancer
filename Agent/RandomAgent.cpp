@@ -14,7 +14,7 @@ RandomAgent::RandomAgent(const std::shared_ptr<Environment> &env, const unsigned
     this->_randomizer = std::mt19937(seed);
 }
 
-void RandomAgent::update(const std::vector<unsigned> s, const unsigned a, const int r,
+void RandomAgent::update(const std::vector<unsigned> s, const unsigned a, const float r,
     const std::vector<unsigned> sPrime, const bool done) {}
 
 unsigned RandomAgent::getBehaviorPolicy(const std::vector<unsigned> s, const unsigned t) {

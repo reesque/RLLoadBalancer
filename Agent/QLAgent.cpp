@@ -37,48 +37,43 @@ unsigned QLAgent::getTargetPolicy(const std::vector<unsigned> s) {
     return this->_argmax(sp);
 }
 
-void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const int r, const std::vector<unsigned> sPrime, const bool done) {
+void QLAgent::update(const std::vector<unsigned> s, const unsigned a, const float r, const std::vector<unsigned> sPrime, const bool done) {
     const unsigned bestAPrime = getTargetPolicy(sPrime);
     const auto nextQ = this->_q[this->_stateToKey(sPrime)][bestAPrime];
     const auto currentQ = this->_q[this->_stateToKey(s)][a];
 
-    this->_q[this->_stateToKey(s)][a] += this->_alpha * (static_cast<float>(r) + this->_gamma * nextQ - currentQ);
+    this->_q[this->_stateToKey(s)][a] += this->_alpha * (r + this->_gamma * nextQ - currentQ);
 }
 
-std::tuple<std::vector<int>, float> QLAgent::train(const unsigned numEpisode) {
+std::vector<float> QLAgent::train(const unsigned numEpisode) {
     this->_env->setDebug(false);
-    std::vector<int> rewards = {};
+    std::vector<float> rewards = {};
     float uScore = 0.0;
     auto pb = ProgressBar("Training QL", numEpisode, [this, &rewards, &uScore](const unsigned it) {
         std::vector<unsigned> s = this->_env->reset();
-        float uScoreEp = 0.0;
         bool done = false;
         unsigned a = getBehaviorPolicy(s, it);
-        int episodeRewards = 0;
-        unsigned t = 0;
+        float episodeRewards = 0;
         while (!done) {
-            int r = 0;
+            float r = 0;
             std::vector<unsigned> sPrime;
             std::tie(sPrime, r, done) = this->_env->step(a);
             const unsigned aPrime = getBehaviorPolicy(s, it);
 
             this->update(s, a, r, sPrime, done);
 
-            t += 1;
-            uScoreEp += this->_env->getUtilizationScore();
             episodeRewards += r;
             s = sPrime;
             a = aPrime;
         }
 
-        uScore += uScoreEp / static_cast<float>(t);
         rewards.push_back(episodeRewards);
     });
 
-    return std::make_tuple(rewards, uScore / static_cast<float>(numEpisode));
+    return rewards;
 }
 
-unsigned QLAgent::rollout() {
+std::tuple<unsigned, float> QLAgent::rollout() {
     std::vector<unsigned> s = this->_env->reset();
     this->_env->setDebug(true);
     bool done = false;
@@ -95,7 +90,7 @@ unsigned QLAgent::rollout() {
         ++t;
     }
 
-    return t;
+    return std::make_tuple(t, this->_env->getUtilizationScore(t));
 }
 
 unsigned QLAgent::_argmax(const std::vector<float> &v) {
