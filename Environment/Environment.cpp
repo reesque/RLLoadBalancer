@@ -67,7 +67,7 @@ std::vector<unsigned> Environment::reset() {
     return s;
 }
 
-std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned action) {
+std::tuple<std::vector<unsigned>, float, bool> Environment::step(const unsigned action) {
     // Action out of bound guard
     if (action >= this->_numAction) {
         std::stringstream es;
@@ -77,7 +77,7 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
 
     // Returning vars: nextState, reward, done
     std::vector<unsigned> nextState;
-    int reward = 0;
+    float reward = 0;
     bool done = true;
 
     // Natural tick at the beginning
@@ -112,7 +112,7 @@ std::tuple<std::vector<unsigned>, int, bool> Environment::step(const unsigned ac
     }
 
     // Calculate utilization neg reward
-    avgUtilization /= this->_numProc;
+    avgUtilization /= static_cast<float>(this->_numProc);
 
     float variance = 0.0;
     for (const auto & _processor : this->_processors) {

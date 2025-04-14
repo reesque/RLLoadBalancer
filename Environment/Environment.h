@@ -13,7 +13,7 @@ public:
 
     void generateTasks();
     std::vector<unsigned> reset();
-    std::tuple<std::vector<unsigned>, int, bool> step(unsigned action);
+    std::tuple<std::vector<unsigned>, float, bool> step(unsigned action);
     std::string toString() const;
     unsigned getNumAction() const;
     unsigned getNumProc() const;
@@ -27,7 +27,7 @@ private:
     unsigned _maxThread;
     unsigned _maxDuration;
     unsigned _numTask;
-    unsigned _lambda;
+    float _lambda;
     std::mt19937 _randomizer;
     bool _isDebug;
     std::deque<std::shared_ptr<Task>> _taskQueue;

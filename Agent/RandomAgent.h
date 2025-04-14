@@ -11,7 +11,7 @@ public:
     void update(std::vector<unsigned> s, unsigned a, float r, std::vector<unsigned> sPrime, bool done) override;
     unsigned getBehaviorPolicy(std::vector<unsigned> s, unsigned t) override;
     unsigned getTargetPolicy(std::vector<unsigned> s) override;
-    std::tuple<std::vector<int>, unsigned> rollout(unsigned numEpisode);
+    std::tuple<std::vector<float>, unsigned> rollout(unsigned numEpisode);
 private:
     std::shared_ptr<Environment> _env;
     std::mt19937 _randomizer;

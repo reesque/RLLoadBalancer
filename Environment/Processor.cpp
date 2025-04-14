@@ -19,7 +19,7 @@ bool Processor::queue(const std::shared_ptr<Task> &task) {
 }
 
 void Processor::tick() {
-    this->_busyThreads += static_cast<unsigned>(this->_tasks.size());
+    this->_busyThreads += this->_tasks.size();
 
     unsigned taskToTick = this->getNumBusyThread();
     for (unsigned i = 0; i < taskToTick; i++) {

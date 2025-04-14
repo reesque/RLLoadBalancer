@@ -26,9 +26,9 @@ unsigned RandomAgent::getBehaviorPolicy(const std::vector<unsigned> s, const uns
 unsigned RandomAgent::getTargetPolicy(const std::vector<unsigned> s) {return 0;}
 
 
-std::tuple<std::vector<int>, unsigned> RandomAgent::rollout(unsigned numEpisode) {
+std::tuple<std::vector<float>, unsigned> RandomAgent::rollout(const unsigned numEpisode) {
     this->_env->setDebug(false);
-    std::vector<int> rewards = {};
+    std::vector<float> rewards = {};
     unsigned totalSteps = 0;
     auto pb = ProgressBar("Rollout Random", numEpisode, [this, &rewards, &totalSteps](const unsigned it) {
         std::vector<unsigned> s = this->_env->reset();
