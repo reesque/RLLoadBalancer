@@ -17,7 +17,7 @@ public:
     void tick();
 private:
     std::vector<std::shared_ptr<Task>> _tasks;
-    unsigned _busyThreads;
+    unsigned _busyThreads = 0;
     unsigned _totalProcessTime = 0;
     unsigned _maxThread;
 };
