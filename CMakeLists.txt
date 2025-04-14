@@ -60,27 +60,27 @@ target_link_libraries(RLLoadBalancer "${TORCH_LIBRARIES}")
 #         Environment/Processor.h)
 # target_link_libraries(test_ffn ${TORCH_LIBRARIES})
 
-add_executable(test_dqn_agent test_dqn_agent.cpp
-        Agent/DQNAgent.h
-        Agent/DQNAgent.cpp
-        Agent/ReplayBuffer.cpp
-        Agent/ReplayBuffer.h
-        Agent/FFN.cpp
-        Agent/FFN.h
-        Environment/Environment.h
-        Environment/Task.h
-        Environment/Task.cpp
-        Environment/Environment.cpp
-        Environment/Processor.cpp
-        Environment/Processor.h
-        Utils/ProgressBar.cpp
-        Utils/ProgressBar.h
-        DecayScheduler/DecayScheduler.cpp
-        DecayScheduler/DecayScheduler.h
-        DecayScheduler/ExponentialDecayScheduler.cpp
-        DecayScheduler/ExponentialDecayScheduler.h
-        DecayScheduler/LinearDecayScheduler.cpp
-        DecayScheduler/LinearDecayScheduler.h
-)
-target_link_libraries(test_dqn_agent ${TORCH_LIBRARIES})
+# add_executable(test_dqn_agent test_dqn_agent.cpp
+#         Agent/DQNAgent.h
+#         Agent/DQNAgent.cpp
+#         Agent/ReplayBuffer.cpp
+#         Agent/ReplayBuffer.h
+#         Agent/FFN.cpp
+#         Agent/FFN.h
+#         Environment/Environment.h
+#         Environment/Task.h
+#         Environment/Task.cpp
+#         Environment/Environment.cpp
+#         Environment/Processor.cpp
+#         Environment/Processor.h
+#         Utils/ProgressBar.cpp
+#         Utils/ProgressBar.h
+#         DecayScheduler/DecayScheduler.cpp
+#         DecayScheduler/DecayScheduler.h
+#         DecayScheduler/ExponentialDecayScheduler.cpp
+#         DecayScheduler/ExponentialDecayScheduler.h
+#         DecayScheduler/LinearDecayScheduler.cpp
+#         DecayScheduler/LinearDecayScheduler.h
+# )
+# target_link_libraries(test_dqn_agent ${TORCH_LIBRARIES})
 

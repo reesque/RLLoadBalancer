@@ -35,7 +35,8 @@ def plot_curve(arr_list, legend_list, color_list, ylabel):
     # plot legends
     ax.legend(handles=h_list)
     plt.show()
-
+    
+label = None
 if file == "ql":
     label = "Q-Learn"
 elif file == "rand":

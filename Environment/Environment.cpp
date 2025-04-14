@@ -151,7 +151,7 @@ float Environment::getUtilizationScore(const unsigned totalSteps) const {
     std::vector<float> allProcBusyTime;
     float mean = 0;
     for (const auto & _processor : this->_processors) {
-        float procBusyTime = _processor->getTotalBusyThreads() / (this->getMaxThread() * totalSteps);
+        float procBusyTime = static_cast<float>(_processor->getTotalBusyThreads()) / static_cast<float>(this->getMaxThread() * totalSteps);
         allProcBusyTime.push_back(procBusyTime);
         mean += procBusyTime;
     }

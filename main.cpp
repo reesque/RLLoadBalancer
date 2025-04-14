@@ -26,7 +26,7 @@ int main() {
     const float lambda = 0.1;
 
     const unsigned numRun = 1;
-    const unsigned numEpisode = 100000;
+    const unsigned numEpisode = 10000;
 
     // Data for plotting
     std::vector<std::vector<float>> qlRewards;
@@ -66,8 +66,7 @@ int main() {
      * Run Deep Q-net. Variables for DQN agent
      */
 
-    /*
-    const auto ds_expo = std::make_shared<ExponentialDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
+    const auto ds_expo = std::make_shared<ExponentialDecayScheduler>(epsilonMin, epsilonMax, 0.00005);
     const float learning_rate = 1e-3f;
     int target_update_freq = 1000;
     size_t replay_capacity = 10000;
@@ -76,38 +75,33 @@ int main() {
 
     int state_size = env->reset().size();
     int action_size = env->getNumAction();
-    std::vector hidden_layers = {64, 64}; // You can change this
+    std::vector hidden_layers = {128, 64, 63}; // You can change this
 
     
     // Create and train DQN agent
-    std::vector<std::vector<int>> dqnRewards;
-    float dqnUtilScore = 0.0;
+    std::vector<std::vector<float>> dqnRewards;
 
     std::unique_ptr<DQNAgent> dqnAagent;
     for (unsigned i = 0; i < 1; ++i) {
-        std::vector<int> runRewards;
-        float uScore;
+        std::vector<float> runRewards;
         dqnAagent = std::make_unique<DQNAgent>(env, state_size, action_size, hidden_layers, gamma, learning_rate,
             ds_expo, target_update_freq, replay_capacity,
             prepopulate_steps, batch_size);
 
-        std::tie(runRewards, uScore) = dqnAagent->train(numEpisode);
+        runRewards = dqnAagent->train(numEpisode);
 
         dqnRewards.push_back(runRewards);
-        dqnUtilScore += uScore;
     }
-    dqnUtilScore /= numRun;
-
-    const unsigned dqnSteps = dqnAagent->rollout();*/
+    auto [dqnSteps,dqnUtilScore] = dqnAagent->rollout();
 
     // Result
     //std::cout << "Random Policy: " << randSteps << " steps" << std::endl;
     std::cout << "Q Learning Policy: " << qlSteps << " steps | " << qlUScore << " Avg Utilization" << std::endl;
-    //std::cout << "Deep Q Network Policy: " << dqnSteps << " steps | " << dqnUtilScore << " Avg Utilization" << std::endl;
+    std::cout << "Deep Q Network Policy: " << dqnSteps << " steps | " << dqnUtilScore << " Avg Utilization" << std::endl;
 
     Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
     //Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
-    //Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
+    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
 
     return 0;
 }
