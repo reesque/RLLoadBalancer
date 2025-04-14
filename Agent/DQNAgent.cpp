@@ -68,7 +68,7 @@ unsigned DQNAgent::getTargetPolicy(std::vector<unsigned> s) {
 }
 
 void DQNAgent::update(std::vector<unsigned> s, const unsigned a, const float r, const std::vector<unsigned> sPrime, const bool done) {
-    _replay_buffer->add(s, a, static_cast<float>(r), sPrime, done);
+    _replay_buffer->add(s, a, r, sPrime, done);
 
     // Perform batch sampling and update Q-net
     _trainStep();
@@ -83,22 +83,22 @@ void DQNAgent::update(std::vector<unsigned> s, const unsigned a, const float r, 
 std::vector<float> DQNAgent::train(const unsigned numEpisode) {
     this->_env->setDebug(false);
     std::vector<float> rewards;
-    float uScore = 0.0;
     
-    auto pb = ProgressBar("Training", numEpisode, [this, &rewards, &uScore](const unsigned episode) {
+    auto pb = ProgressBar("Training", numEpisode, [this, &rewards](const unsigned episode) {
         std::vector<unsigned> s = this->_env->reset();
         bool done = false;
         
-        int episodeRewards = 0;
-
+        float episodeRewards = 0;
+        unsigned t = 0;
         while (!done) {
             const unsigned a = getBehaviorPolicy(s, _steps_done);
-            int r;
+            float r;
             std::vector<unsigned> sPrime;
             std::tie(sPrime, r, done) = this->_env->step(a);
 
             this->update(s, a, r, sPrime, done); // ++_steps_done is done here
 
+            ++t;
             episodeRewards += r;
             s = sPrime;
         }
@@ -109,7 +109,7 @@ std::vector<float> DQNAgent::train(const unsigned numEpisode) {
     return rewards;
 }
 
-unsigned DQNAgent::rollout() {
+std::tuple<unsigned, float> DQNAgent::rollout() {
     int total_reward = 0;
     std::vector<unsigned> s = this->_env->reset();
     this->_env->setDebug(true);
@@ -126,8 +126,8 @@ unsigned DQNAgent::rollout() {
         ++t;
         total_reward += r;
     }
-    // std::cout << "[Rollout] Took " << t << " time steps to finish!\nTotal Reward: " << total_reward << std::endl;
-    return t;
+
+    return std::make_tuple(t, this->_env->getUtilizationScore(t));
 }
 
 unsigned DQNAgent::_argmax(const torch::Tensor& v) {

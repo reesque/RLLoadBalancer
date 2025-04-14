@@ -32,7 +32,7 @@ public:
     unsigned getTargetPolicy(std::vector<unsigned> s) override;
     void update(std::vector<unsigned> s, unsigned a, float r, std::vector<unsigned> sPrime, bool done) override;
     std::vector<float> train(unsigned numEpisode);
-    unsigned rollout();
+    std::tuple<unsigned, float> rollout();
 
 private:
     std::shared_ptr<Environment> _env;
