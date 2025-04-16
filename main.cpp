@@ -19,7 +19,7 @@ int main() {
 
     const float epsilonMin = 0.1;
     const float epsilonMax = 1.0;
-    const float epsilonDecayRate = 0.0001;
+    const float epsilonDecayRate = 0.00005;
 
     const float alpha = 0.5;
     const float gamma = 0.9;
@@ -65,18 +65,17 @@ int main() {
     /**
      * Run Deep Q-net. Variables for DQN agent
      */
-    const auto ds_expo = std::make_shared<ExponentialDecayScheduler>(epsilonMin, epsilonMax, epsilonDecayRate);
+    const auto ds_expo = std::make_shared<ExponentialDecayScheduler>(epsilonMin, epsilonMax, 0.000025);
     const float learning_rate = 1e-3f;
     int target_update_freq = 1000;
-    size_t replay_capacity = 10000;
-    float prepopulate_steps = 2500;
+    size_t replay_capacity = 20000;
+    float prepopulate_steps = 5000;
     size_t batch_size = 64;
 
     int state_size = env->reset().size();
     int action_size = env->getNumAction();
-    std::vector hidden_layers = {128, 64, 63}; // You can change this
+    std::vector hidden_layers = {64, 64}; // You can change this
 
-    
     // Create and train DQN agent
 
     std::unique_ptr<DQNAgent> dqnAagent;
@@ -95,9 +94,9 @@ int main() {
     std::cout << "Q Learning Policy: " << qlSteps << " steps | " << qlUScore << " Avg Utilization" << std::endl;
     std::cout << "Deep Q Network Policy: " << dqnSteps << " steps | " << dqnUScore << " Avg Utilization" << std::endl;
 
-    Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql");
-    Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand");
-    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn");
+    Plot::ExportAverageRewardsOverEpisodes(qlRewards, "ql_2_4_16_24_100K");
+    Plot::ExportAverageRewardsOverEpisodes(randRewards, "rand_2_4_16_24_100K");
+    Plot::ExportAverageRewardsOverEpisodes(dqnRewards, "dqn_2_4_16_24_100K");
 
     return 0;
 }

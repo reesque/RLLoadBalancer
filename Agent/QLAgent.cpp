@@ -80,7 +80,7 @@ std::tuple<unsigned, float> QLAgent::rollout() {
     unsigned a = getTargetPolicy(s);
     unsigned t = 0;
     while (!done) {
-        int r = 0;
+        float r = 0;
         std::vector<unsigned> sPrime;
         std::tie(sPrime, r, done) = this->_env->step(a);
         const unsigned aPrime = getTargetPolicy(s);

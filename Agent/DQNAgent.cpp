@@ -110,14 +110,14 @@ std::vector<float> DQNAgent::train(const unsigned numEpisode) {
 }
 
 std::tuple<unsigned, float> DQNAgent::rollout() {
-    int total_reward = 0;
+    float total_reward = 0;
     std::vector<unsigned> s = this->_env->reset();
     this->_env->setDebug(true);
     bool done = false;
     
     unsigned t = 0;
     while (!done) {
-        int r = 0;
+        float r = 0;
         unsigned a = getTargetPolicy(s);
         std::vector<unsigned> sPrime;
         std::tie(sPrime, r, done) = this->_env->step(a);
