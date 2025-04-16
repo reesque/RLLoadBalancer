@@ -10,7 +10,7 @@ ReplayBuffer::ReplayBuffer(size_t capacity, const unsigned seed)
     _randomizer(std::mt19937(seed)) {}
 
 void ReplayBuffer::add(std::vector<unsigned> state, unsigned action, float reward, std::vector<unsigned> next_state, bool done) {
-    Batch batch{state, action, static_cast<float>(reward), next_state, done};
+    Batch batch{state, action, reward, next_state, done};
     // <deque> pop_front and push_back are O(1)
     if (buffer_.size() >= capacity_) {
         buffer_.pop_front();
