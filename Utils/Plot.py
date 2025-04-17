@@ -9,15 +9,16 @@ file = input("File Path: ")
 with open(f'./{file}.csv', newline='') as csvfile:
     csvreader = csv.reader(csvfile)
     for row in csvreader:
-        data.append([int(x) for x in row])
+        data.append([float(x) for x in row])
 
-def plot_curve(arr_list, legend_list, color_list, ylabel):
+def plot_curve(arr_list, legend_list, color_list, ylabel, title=None):
     # set the figure type
     fig, ax = plt.subplots(figsize=(12, 8))
 
     # PLEASE NOTE: Change the labels for different plots
     ax.set_ylabel(ylabel)
     ax.set_xlabel("Episodes")
+    ax.set_title(title)
 
     # ploth results
     h_list = []
@@ -35,13 +36,19 @@ def plot_curve(arr_list, legend_list, color_list, ylabel):
     # plot legends
     ax.legend(handles=h_list)
     plt.show()
-
-if file == "ql":
+    
+label = None
+split_string = file.split("_", 1)
+prefix = split_string[0]
+if prefix == "ql":
     label = "Q-Learn"
-elif file == "rand":
+elif prefix == "rand":
     label = "Random Policy"
-elif file == "dqn":
+elif prefix == "dqn":
     label = "Deep Q-Network"
 else:
     raise NotImplementedError
-plot_curve([np.array(data)], [label], ["Red"], "Rewards")
+title_plot = f"{label}"
+if len(split_string) > 1:
+    title_plot += " " + split_string[1]
+plot_curve([np.array(data)], [label], ["Red"], "Rewards", title_plot)
